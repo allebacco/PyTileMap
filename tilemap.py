@@ -26,8 +26,9 @@ import sys
 from PyQt4 import QtCore, QtGui
 
 from osm import OsmTile
+from here import HereTile
 
-from items import TileMapItemPoint
+from items import TileMapItemPoint, TileMapItemLine
 
 
 class TileMap(QtGui.QWidget):
@@ -40,7 +41,7 @@ class TileMap(QtGui.QWidget):
 
         self.pressPos = QtCore.QPoint()
 
-        self.m_normalMap = OsmTile(self)
+        self.m_normalMap = HereTile(self)
         self.m_normalMap.updated.connect(self.updateMap)
 
         self.items = list()
@@ -53,6 +54,38 @@ class TileMap(QtGui.QWidget):
         item.updatePosition(tl, zoom)
 
         self.update()
+
+    def addPoint(self, lat, lon, radius=None, color=None):
+        point = TileMapItemPoint(lat, lon)
+        if radius is not None:
+            point.radius = radius
+        if color is not None:
+            point.brush.setColor(color)
+        self.addItem(point)
+        return point
+
+    def addLine(self, lat1, lon1, lat2, lon2, width=None, color=None):
+        line = TileMapItemLine(lat1, lon1, lat2, lon2)
+        if width is not None:
+            line.pen.setWidth(width)
+        if color is not None:
+            line.pen.setColor(color)
+        self.addItem(line)
+        return line
+
+    def addLines(self, latLonList, width=None, color=None):
+        lines = []
+        for i in xrange(1, len(latLonList)):
+            p1 = latLonList[i-1]
+            p2 = latLonList[i]
+            line = TileMapItemLine(p1[0], p1[1], p2[0], p2[1])
+            if width is not None:
+                line.pen.setWidth(width)
+            if color is not None:
+                line.pen.setColor(color)
+            self.addItem(line)
+            lines.append(line)
+        return lines
 
     def clear(self):
         self.items = list()

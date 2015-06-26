@@ -150,8 +150,7 @@ class BaseTile(QtCore.QObject):
         for p in grab:
             url = QtCore.QUrl(self.url(p.y(), p.x(), self.zoom))
             self._tileInDownload.append(qHash(p))
-            request = QtNetwork.QNetworkRequest()
-            request.setUrl(url)
+            request = QtNetwork.QNetworkRequest(url=url)
             request.setRawHeader('User-Agent', '(PyQt) TileMap 1.1')
             request.setAttribute(QtNetwork.QNetworkRequest.User, p)
             self.m_manager.get(request)
