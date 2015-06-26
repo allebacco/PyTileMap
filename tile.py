@@ -1,5 +1,5 @@
 import math
-from PyQt4 import QtCore, QtGui, QtNetwork
+from PyQt4 import Qt, QtCore, QtGui, QtNetwork
 
 from tile_utils import TDIM, MIN_ZOOM, MAX_ZOOM, qHash, tileForCoordinate, longitudeFromTile, latitudeFromTile
 
@@ -29,6 +29,8 @@ class BaseTile(QtCore.QObject):
         self.g_offset = QtCore.QPoint()
         self.m_tilesRect = QtCore.QRect()
         self.m_tilePixmaps = {}
+
+        self._tileInDownload = list()
 
         self.rect = QtCore.QRectF(0.0, 0.0, width, height)
         self.setCenter(latitude, longitude)
@@ -72,7 +74,7 @@ class BaseTile(QtCore.QObject):
         y = ys * TDIM - self.m_offset.y()
         self.g_offset = QtCore.QPointF(x, y)
 
-        if self.m_url.isEmpty():
+        if len(self._tileInDownload) == 0:
             self.download()
 
         if emitSignal:
@@ -108,21 +110,24 @@ class BaseTile(QtCore.QObject):
         if self.zoom > MIN_ZOOM:
             self.zoomTo(self.zoom-1)
 
+    @Qt.pyqtSlot(QtNetwork.QNetworkReply)
     def handleNetworkData(self, reply):
         img = QtGui.QImage()
-        tp = reply.request().attribute(QtNetwork.QNetworkRequest.User).toPoint()
-
+        tp = reply.request().attribute(QtNetwork.QNetworkRequest.User).toPyObject()
+        hashTp = qHash(tp)
         if not reply.error():
-            if not img.load(reply, self.imageFormat()):
-                img = QtGui.QImage()
+            if img.load(reply, None):
+                self.m_tilePixmaps[hashTp] = QtGui.QPixmap.fromImage(img)
         reply.deleteLater()
-        if img.isNull():
-            self.m_tilePixmaps[qHash(tp)] = self.m_emptyTile
-        else:
-            self.m_tilePixmaps[qHash(tp)] = QtGui.QPixmap.fromImage(img)
+        if hashTp in self._tileInDownload:
+            self._tileInDownload.remove(hashTp)
         self.updated.emit(self.tileRect(tp))
 
-        self.download()
+        # purge unused tiles
+        bound = self.m_tilesRect.adjusted(-2, -2, 2, 2)
+        for hashTp in list(self.m_tilePixmaps.keys()):
+            if not bound.contains(hashTp[0], hashTp[1]):
+                del self.m_tilePixmaps[hashTp]
 
     def url(self, lat, lon, zoom):
         raise NotImplementedError()
@@ -131,26 +136,24 @@ class BaseTile(QtCore.QObject):
         raise NotImplementedError()
 
     def download(self):
-        try:
-            for x in xrange(self.m_tilesRect.width()+1):
-                for y in xrange(self.m_tilesRect.height()+1):
-                    tp = self.m_tilesRect.topLeft() + QtCore.QPoint(x, y)
-                    if not qHash(tp) in self.m_tilePixmaps:
-                        raise StopIteration()
+        grab = list()
+        for x in xrange(self.m_tilesRect.width()):
+            for y in xrange(self.m_tilesRect.height()):
+                tp = self.m_tilesRect.topLeft() + QtCore.QPoint(x, y)
+                if qHash(tp) not in self.m_tilePixmaps:
+                    grab.append(tp)
 
-            self.m_url = QtCore.QUrl()
-            # purge unused spaces
-            bound = self.m_tilesRect.adjusted(-2, -2, 2, 2)
-            for tileHash in self.m_tilePixmaps.keys():
-                if not bound.contains(QtCore.QPoint(tileHash[0], tileHash[1])):
-                    del self.m_tilePixmaps[tileHash]
+        if len(grab) == 0:
+            self._tileInDownload = list()
+            return
 
-        except StopIteration:
-            self.m_url = QtCore.QUrl(self.url(tp.y(), tp.x(), self.zoom))
+        for p in grab:
+            url = QtCore.QUrl(self.url(p.y(), p.x(), self.zoom))
+            self._tileInDownload.append(qHash(p))
             request = QtNetwork.QNetworkRequest()
-            request.setUrl(self.m_url)
-            request.setRawHeader("User-Agent", "(PyQt) TileMap 1.0")
-            request.setAttribute(QtNetwork.QNetworkRequest.User, QtCore.QVariant(tp))
+            request.setUrl(url)
+            request.setRawHeader('User-Agent', '(PyQt) TileMap 1.1')
+            request.setAttribute(QtNetwork.QNetworkRequest.User, p)
             self.m_manager.get(request)
 
     def tileRect(self, tp):
