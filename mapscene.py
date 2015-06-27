@@ -1,5 +1,12 @@
-import math
-from PyQt4 import Qt, QtCore, QtGui, QtNetwork
+from math import log as m_log
+from math import tan as m_tan
+from math import pi as m_PI
+from math import cos as m_cos
+from math import atan as m_atan
+from math import exp as m_exp
+from math import floor as m_floor
+
+from PyQt4 import Qt, QtCore, QtGui
 
 from mapitems import MapGraphicsEllipseItem
 
@@ -16,24 +23,21 @@ def qHash(point):
 
 class MapGraphicScene(QtGui.QGraphicsScene):
 
+    _tileSource = None
+
     def __init__(self, tileSource, parent=None):
         QtCore.QObject.__init__(self)
-        self.zoom = 15
+        self._zoom = 15
 
-        self.m_emptyTile = QtGui.QPixmap(TDIM, TDIM)
-        self.m_emptyTile.fill(QtCore.Qt.lightGray)
+        self._tileSource = tileSource
+        self._tileSource.setParent(self)
+        self._tileSource.tileReceived.connect(self.setTilePixmap)
 
-        self.m_manager = QtNetwork.QNetworkAccessManager()
-        cache = QtNetwork.QNetworkDiskCache()
-        cache.setCacheDirectory(QtGui.QDesktopServices.storageLocation(QtGui.QDesktopServices.CacheLocation))
-        self.m_manager.setCache(cache)
-        self.m_manager.finished.connect(self.handleNetworkData)
+        self._emptyTile = QtGui.QPixmap(TDIM, TDIM)
+        self._emptyTile.fill(QtCore.Qt.lightGray)
 
-        self.m_url = QtCore.QUrl()
-        self.m_offset = QtCore.QPoint()
-        self.g_offset = QtCore.QPoint()
-        self.m_tilesRect = QtCore.QRect()
-        self.m_tilePixmaps = {}
+        self._tilesRect = QtCore.QRect()
+        self._tilePixmaps = {}
 
         self._tileInDownload = list()
 
@@ -41,7 +45,6 @@ class MapGraphicScene(QtGui.QGraphicsScene):
         self.sceneRectChanged.connect(self.onSceneRectChanged)
 
     def onSceneRectChanged(self, rect):
-
         center = rect.center()
         ct = self.tileFromPos(center.x(), center.y())
         tx = ct.x()
@@ -50,8 +53,8 @@ class MapGraphicScene(QtGui.QGraphicsScene):
         width = rect.width()
         height = rect.height()
         # top left corner of the center tile
-        xp = int(width / 2.0 - (tx - math.floor(tx)) * TDIM)
-        yp = int(height / 2.0 - (ty - math.floor(ty)) * TDIM)
+        xp = int(width / 2.0 - (tx - m_floor(tx)) * TDIM)
+        yp = int(height / 2.0 - (ty - m_floor(ty)) * TDIM)
 
         # first tile vertical and horizontal
         xa = (xp + TDIM - 1) / TDIM
@@ -59,105 +62,92 @@ class MapGraphicScene(QtGui.QGraphicsScene):
         xs = tx - xa
         ys = ty - ya
 
-        # offset for top-left tile
-        self.m_offset = QtCore.QPoint(xp - xa * TDIM, yp - ya * TDIM)
-
         # last tile vertical and horizontal
         xe = tx + (width - xp - 1) / TDIM
         ye = ty + (height - yp - 1) / TDIM
 
         # build a rect
-        self.m_tilesRect = QtCore.QRect(xs-1, ys-1, xe - xs + 2, ye - ys + 2)
+        self._tilesRect = QtCore.QRect(xs-1, ys-1, xe - xs + 2, ye - ys + 2)
 
-        if len(self._tileInDownload) == 0:
-            self.download()
+        self.requestTiles()
 
         self.update()
 
     def drawBackground(self, painter, rect):
-        tilesRect = self.m_tilesRect
+        tilesRect = self._tilesRect
         numXtiles = tilesRect.width()+1
         numYtiles = tilesRect.height()+1
         left = tilesRect.left()
         top = tilesRect.top()
         pixRect = QtCore.QRectF(0.0, 0.0, TDIM, TDIM)
+        emptyTilePix = self._emptyTile
+        tilePixmaps = self._tilePixmaps
         for x in xrange(numXtiles):
             for y in xrange(numYtiles):
-                tp = QtCore.QPoint(x + left, y + top)
-                box = self.tileRect(tp)
-                if qHash(tp) in self.m_tilePixmaps:
-                    painter.drawPixmap(box, self.m_tilePixmaps[qHash(tp)], pixRect)
+                tp = (x + left, y + top)
+                box = self.tileRect(tp[0], tp[1])
+                if tp in self._tilePixmaps:
+                    painter.drawPixmap(box, tilePixmaps[tp], pixRect)
                 else:
-                    painter.drawPixmap(box, self.m_emptyTile, pixRect)
+                    painter.drawPixmap(box, emptyTilePix, pixRect)
 
     def zoomTo(self, zoomlevel):
         if zoomlevel > MAX_ZOOM or zoomlevel < MIN_ZOOM:
             return
 
+        self._tilePixmaps = dict()
+        self._tileSource.abortAllRequests()
+
         center = self.sceneRect().center()
         coord = self.lonLatFromPos(center.x(), center.y())
-        self.zoom = zoomlevel
-        print self.zoom
+        self._zoom = zoomlevel
         for item in self.items():
             item.updatePosition(self)
         self.setCenter(coord.y(), coord.x())
 
     def zoomIn(self):
-        self.zoomTo(self.zoom+1)
+        self.zoomTo(self._zoom+1)
 
     def zoomOut(self):
-        self.zoomTo(self.zoom-1)
+        self.zoomTo(self._zoom-1)
 
-    @Qt.pyqtSlot(QtNetwork.QNetworkReply)
-    def handleNetworkData(self, reply):
-        img = QtGui.QImage()
-        tp = reply.request().attribute(QtNetwork.QNetworkRequest.User).toPyObject()
-        hashTp = qHash(tp)
-        if not reply.error():
-            if img.load(reply, None):
-                self.m_tilePixmaps[hashTp] = QtGui.QPixmap.fromImage(img)
-        reply.deleteLater()
-        if hashTp in self._tileInDownload:
-            self._tileInDownload.remove(hashTp)
-        self.update()
+    @Qt.pyqtSlot(int, int, int, QtGui.QPixmap)
+    def setTilePixmap(self, x, y, zoom, pixmap):
+        if self._zoom == zoom:
+            self._tilePixmaps[(x, y)] = pixmap
+            self.update()
+
+    def requestTiles(self):
+        tilesRect = self._tilesRect
+        tilePixmaps = self._tilePixmaps
 
         # purge unused tiles
-        bound = self.m_tilesRect.adjusted(-2, -2, 2, 2)
-        for hashTp in list(self.m_tilePixmaps.keys()):
-            if not bound.contains(hashTp[0], hashTp[1]):
-                del self.m_tilePixmaps[hashTp]
+        bound = tilesRect.adjusted(-10, -10, 10, 10)
+        for p in list(tilePixmaps.keys()):
+            if not bound.contains(p[0], p[1]):
+                del tilePixmaps[p]
 
-    def url(self, lat, lon, zoom):
-        url = "http://tile.openstreetmap.org/%d/%d/%d.png" % (zoom, lon, lat)
-        return url
+        # Request load of new tiles
+        numXtiles = tilesRect.width()
+        numYtiles = tilesRect.height()
+        left = tilesRect.left()
+        top = tilesRect.top()
+        tileSource = self._tileSource
+        zoom = self._zoom
+        update = False
+        for x in xrange(numXtiles):
+            for y in xrange(numYtiles):
+                tp = (left + x, top + y)
+                if tp not in tilePixmaps:
+                    pix = tileSource.requestTile(tp[0], tp[1], zoom)
+                    if pix is not None:
+                        tilePixmaps[tp] = pix
+                        update = True
+        if update:
+            self.update()
 
-    def imageFormat(self):
-        return 'PNG'
-
-    def download(self):
-        grab = list()
-        for x in xrange(self.m_tilesRect.width()):
-            for y in xrange(self.m_tilesRect.height()):
-                tp = self.m_tilesRect.topLeft() + QtCore.QPoint(x, y)
-                if qHash(tp) not in self.m_tilePixmaps:
-                    grab.append(tp)
-
-        if len(grab) == 0:
-            self._tileInDownload = list()
-            return
-
-        for p in grab:
-            url = QtCore.QUrl(self.url(p.y(), p.x(), self.zoom))
-            self._tileInDownload.append(qHash(p))
-            request = QtNetwork.QNetworkRequest(url=url)
-            request.setRawHeader('User-Agent', '(PyQt) TileMap 1.1')
-            request.setAttribute(QtNetwork.QNetworkRequest.User, p)
-            self.m_manager.get(request)
-
-    def tileRect(self, tp):
-        x = tp.x() * TDIM
-        y = tp.y() * TDIM
-        return QtCore.QRectF(x, y, TDIM, TDIM)
+    def tileRect(self, tx, ty):
+        return QtCore.QRectF(tx * TDIM, ty * TDIM, TDIM, TDIM)
 
     def setSize(self, width, height):
         rect = QtCore.QRectF(self.sceneRect())
@@ -175,20 +165,20 @@ class MapGraphicScene(QtGui.QGraphicsScene):
         self.setSceneRect(self.sceneRect().translated(dx, dy))
 
     def posFromLatLon(self, lat, lon):
-        zn = 1 << self.zoom
+        zn = 1 << self._zoom
         zn = zn * TDIM
         tx = (lon+180.0)/360.0
-        ty = (1.0 - math.log(math.tan(lat*math.pi/180.0) + 1.0/math.cos(lat*math.pi/180.0)) / math.pi) / 2.0
+        ty = (1.0 - m_log(m_tan(lat*m_PI/180.0) + 1.0/m_cos(lat*m_PI/180.0)) / m_PI) / 2.0
         return QtCore.QPointF(tx*zn, ty*zn)
 
     def lonLatFromPos(self, x, y):
         tx = x / float(TDIM)
         ty = y / float(TDIM)
 
-        zn = 1 << self.zoom
+        zn = 1 << self._zoom
         lon = tx / zn * 360.0 - 180.0
-        n = math.pi - 2 * math.pi * ty / zn
-        lat = 180.0 / math.pi * math.atan(0.5 * (math.exp(n) - math.exp(-n)))
+        n = m_PI - 2.0 * m_PI * ty / zn
+        lat = 180.0 / m_PI * m_atan(0.5 * (m_exp(n) - m_exp(-n)))
         return QtCore.QPointF(lon, lat)
 
     def tileFromPos(self, x, y):
