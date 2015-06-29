@@ -10,7 +10,7 @@ class MapGraphicsView(QtGui.QGraphicsView):
 
     def __init__(self, parent=None):
         QtGui.QGraphicsView.__init__(self, parent=parent)
-        scene = MapGraphicScene(MapTileSourceOSM())
+        scene = MapGraphicScene(MapTileSourceHereDemo())
         self.setScene(scene)
 
     def resizeEvent(self, event):

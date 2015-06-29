@@ -63,11 +63,11 @@ class MapGraphicScene(QtGui.QGraphicsScene):
         ys = ty - ya
 
         # last tile vertical and horizontal
-        xe = tx + (width - xp - 1) / TDIM
-        ye = ty + (height - yp - 1) / TDIM
+        xe = tx + (width - xp - 1) / TDIM + 1
+        ye = ty + (height - yp - 1) / TDIM + 1
 
         # build a rect
-        self._tilesRect = QtCore.QRect(xs-1, ys-1, xe - xs + 2, ye - ys + 2)
+        self._tilesRect = QtCore.QRect(xs, ys, xe - xs + 1, ye - ys + 1)
 
         self.requestTiles()
 

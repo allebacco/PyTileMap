@@ -5,7 +5,7 @@ from PyQt4 import Qt, QtGui, QtCore
 from PyQt4.QtCore import QObject
 from PyQt4.QtNetwork import QNetworkRequest, QNetworkDiskCache, QNetworkAccessManager, QNetworkReply
 
-from pycachu import Pycachu
+from cache import Pycachu
 
 
 class MapTileSource(QObject):
