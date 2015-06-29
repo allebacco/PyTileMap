@@ -1,16 +1,15 @@
 import os
-from cStringIO import StringIO
 
-from PyQt4 import Qt, QtGui, QtCore
-from PyQt4.QtCore import QObject
-from PyQt4.QtNetwork import QNetworkRequest, QNetworkDiskCache, QNetworkAccessManager, QNetworkReply
-
-from cache import Pycachu
+from PyQt4.Qt import Qt, pyqtSignal, pyqtSlot
+from PyQt4.QtCore import QObject, QByteArray, QUrl, QThread
+from PyQt4.QtGui import QDesktopServices, QPixmap
+from PyQt4.QtNetwork import QNetworkRequest, QNetworkDiskCache, QNetworkAccessManager, \
+                            QNetworkReply,  QNetworkCacheMetaData
 
 
 class MapTileSource(QObject):
 
-    tileReceived = Qt.pyqtSignal(int, int, int, QtGui.QPixmap)
+    tileReceived = pyqtSignal(int, int, int, QPixmap)
 
     _tileSize = None
     _minZoom = None
@@ -60,39 +59,54 @@ class MapTileSourceDirectory(MapTileSource):
     def requestTile(self, x, y, zoom):
         filename = os.path.join(self._directory, str(zoom), str(x), str(y)+self._fnameSuffix)
         if os.path.exists(filename):
-            return QtGui.QPixmap(filename)
+            return QPixmap(filename)
         return None
 
 
-class MapTileHTTPLoader(QtCore.QObject):
+class MapTileHTTPLoader(QObject):
 
-    tileLoaded = Qt.pyqtSignal(int, int, int, QtCore.QByteArray)
+    tileLoaded = pyqtSignal(int, int, int, QByteArray)
 
-    def __init__(self, cacheSize=1024*1024*100, userAgent='(PyQt) TileMap 1.2',
-                 tileSize=256, parent=None):
-        QtCore.QThread.__init__(self, parent=parent)
+    _userAgent = None
+    _cacheSize = None
+
+    def __init__(self, cacheSize=1024*1024*100, userAgent='(PyQt) TileMap 1.2', parent=None):
+        QObject.__init__(self, parent=parent)
         self._manager = None
+        self._cache = None
+        self._cacheSize = cacheSize
+        self._userAgent = userAgent
         self._tileInDownload = dict()
 
-    @Qt.pyqtSlot(int, int, int, str)
+    @pyqtSlot(int, int, int, str)
     def loadTile(self, x, y, zoom, url):
         if self._manager is None:
-            self._manager = QNetworkAccessManager()
+            self._manager = QNetworkAccessManager(parent=self)
             self._manager.finished.connect(self.handleNetworkData)
-            cache = QNetworkDiskCache()
-            cache.setCacheDirectory(QtGui.QDesktopServices.storageLocation(QtGui.QDesktopServices.CacheLocation))
-            self.m_manager.setCache(cache)
+            self._cache = QNetworkDiskCache(parent=self)
+            self._cache.setMaximumCacheSize(self._cacheSize)
+            self._cache.setCacheDirectory(QDesktopServices.storageLocation(QDesktopServices.CacheLocation))
 
-        print 'request', url
+        key = (x, y, zoom)
+        url = QUrl(url)
+        if self._cache.metaData(url).isValid():
+            iodevice = self._cache.data(url)
+            data = iodevice.readAll()
+            iodevice.close()
+            iodevice.deleteLater()
+            self.tileLoaded.emit(x, y, zoom, data)
+        elif key in self._tileInDownload:
+            # Image is already in download... return
+            return
+        else:
+            request = QNetworkRequest(url=url)
+            request.setRawHeader('User-Agent', self._userAgent)
+            request.setAttribute(QNetworkRequest.User, key)
+            self._tileInDownload[key] = self._manager.get(request)
 
-        url = QtCore.QUrl(url)
-        request = QNetworkRequest(url=url)
-        request.setRawHeader('User-Agent', '(PyQt) TileMap 1.2')
-        p = (x, y, zoom)
-        request.setAttribute(QNetworkRequest.User, p)
-        self._tileInDownload[p] = self._manager.get(request)
+        print 'In download:', len(self._tileInDownload)
 
-    @Qt.pyqtSlot(QNetworkReply)
+    @pyqtSlot(QNetworkReply)
     def handleNetworkData(self, reply):
         tp = reply.request().attribute(QNetworkRequest.User).toPyObject()
         if tp in self._tileInDownload:
@@ -100,27 +114,36 @@ class MapTileHTTPLoader(QtCore.QObject):
 
         if not reply.error():
             data = reply.readAll()
+            meta = QNetworkCacheMetaData()
+            meta.setUrl(reply.request().url())
+            meta.setSaveToDisk(True)
+            iodevice = self._cache.prepare(meta)
+            iodevice.write(data)
+            self._cache.insert(iodevice)
             self.tileLoaded.emit(tp[0], tp[1], tp[2], data)
+        reply.close()
         reply.deleteLater()
+        print 'In download:', len(self._tileInDownload)
 
-    @Qt.pyqtSlot()
+    @pyqtSlot()
     def abortRequest(self, x, y, zoom):
         p = (x, y, zoom)
         reply = self._tileInDownload[p]
         del self._tileInDownload[p]
-        reply.abort()
+        reply.close()
         reply.deleteLater()
 
-    @Qt.pyqtSlot()
+    @pyqtSlot()
     def abortAllRequests(self):
         for x, y, zoom in self._tileInDownload.keys():
             self.abortRequest(x, y, zoom)
+        print 'In download:', len(self._tileInDownload)
 
 
 class MapTileSourceHTTP(MapTileSource):
 
-    requestTileLoading = Qt.pyqtSignal(int, int, int, str)
-    abortTileLoading = Qt.pyqtSignal()
+    requestTileLoading = pyqtSignal(int, int, int, str)
+    abortTileLoading = pyqtSignal()
 
     _userAgent = None
     _manager = None
@@ -132,12 +155,13 @@ class MapTileSourceHTTP(MapTileSource):
                  tileSize=256, minZoom=2, maxZoom=18, parent=None):
         MapTileSource.__init__(self, tileSize=tileSize, minZoom=minZoom, maxZoom=maxZoom, parent=parent)
 
-        self._thread = QtCore.QThread(parent=self)
-        self._loader = MapTileHTTPLoader(tileSize=tileSize)
+        self._thread = QThread(parent=self)
+        self._loader = MapTileHTTPLoader(cacheSize=cacheSize, userAgent=userAgent)
         self._loader.moveToThread(self._thread)
-        self.requestTileLoading.connect(self._loader.loadTile, Qt.Qt.QueuedConnection)
-        self.abortTileLoading.connect(self._loader.abortAllRequests, Qt.Qt.QueuedConnection)
-        self._loader.tileLoaded.connect(self.handleTileDataLoaded, Qt.Qt.QueuedConnection)
+
+        self.requestTileLoading.connect(self._loader.loadTile, Qt.QueuedConnection)
+        self.abortTileLoading.connect(self._loader.abortAllRequests, Qt.QueuedConnection)
+        self._loader.tileLoaded.connect(self.handleTileDataLoaded, Qt.QueuedConnection)
 
         self._thread.start()
 
@@ -149,9 +173,9 @@ class MapTileSourceHTTP(MapTileSource):
         self.requestTileLoading.emit(x, y, zoom, url)
         return None
 
-    @Qt.pyqtSlot(int, int, int, QtCore.QByteArray)
+    @pyqtSlot(int, int, int, QByteArray)
     def handleTileDataLoaded(self, x, y, zoom, data):
-        pix = QtGui.QPixmap()
+        pix = QPixmap()
         pix.loadFromData(data)
         self.tileReceived.emit(x, y, zoom, pix)
 

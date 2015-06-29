@@ -6,14 +6,11 @@ from math import atan as m_atan
 from math import exp as m_exp
 from math import floor as m_floor
 
-from PyQt4 import Qt, QtCore, QtGui
+from PyQt4.Qt import Qt, pyqtSlot
+from PyQt4.QtCore import QRect, QRectF, QPointF
+from PyQt4.QtGui import QGraphicsScene, QPixmap
 
 from mapitems import MapGraphicsEllipseItem
-
-
-TDIM = 256
-MIN_ZOOM = 2
-MAX_ZOOM = 18
 
 
 def qHash(point):
@@ -21,22 +18,23 @@ def qHash(point):
     return (point.x(), point.y())
 
 
-class MapGraphicScene(QtGui.QGraphicsScene):
+class MapGraphicScene(QGraphicsScene):
 
     _tileSource = None
 
     def __init__(self, tileSource, parent=None):
-        QtCore.QObject.__init__(self)
+        QGraphicsScene.__init__(self)
         self._zoom = 15
 
         self._tileSource = tileSource
         self._tileSource.setParent(self)
         self._tileSource.tileReceived.connect(self.setTilePixmap)
+        tdim = self._tileSource.tileSize()
 
-        self._emptyTile = QtGui.QPixmap(TDIM, TDIM)
-        self._emptyTile.fill(QtCore.Qt.lightGray)
+        self._emptyTile = QPixmap(tdim, tdim)
+        self._emptyTile.fill(Qt.lightGray)
 
-        self._tilesRect = QtCore.QRect()
+        self._tilesRect = QRect()
         self._tilePixmaps = {}
 
         self._tileInDownload = list()
@@ -45,6 +43,7 @@ class MapGraphicScene(QtGui.QGraphicsScene):
         self.sceneRectChanged.connect(self.onSceneRectChanged)
 
     def onSceneRectChanged(self, rect):
+        tdim = self._tileSource.tileSize()
         center = rect.center()
         ct = self.tileFromPos(center.x(), center.y())
         tx = ct.x()
@@ -53,21 +52,21 @@ class MapGraphicScene(QtGui.QGraphicsScene):
         width = rect.width()
         height = rect.height()
         # top left corner of the center tile
-        xp = int(width / 2.0 - (tx - m_floor(tx)) * TDIM)
-        yp = int(height / 2.0 - (ty - m_floor(ty)) * TDIM)
+        xp = int(width / 2.0 - (tx - m_floor(tx)) * tdim)
+        yp = int(height / 2.0 - (ty - m_floor(ty)) * tdim)
 
         # first tile vertical and horizontal
-        xa = (xp + TDIM - 1) / TDIM
-        ya = (yp + TDIM - 1) / TDIM
+        xa = (xp + tdim - 1) / tdim
+        ya = (yp + tdim - 1) / tdim
         xs = tx - xa
         ys = ty - ya
 
         # last tile vertical and horizontal
-        xe = tx + (width - xp - 1) / TDIM + 1
-        ye = ty + (height - yp - 1) / TDIM + 1
+        xe = tx + (width - xp - 1) / tdim + 1
+        ye = ty + (height - yp - 1) / tdim + 1
 
         # build a rect
-        self._tilesRect = QtCore.QRect(xs, ys, xe - xs + 1, ye - ys + 1)
+        self._tilesRect = QRect(xs, ys, xe - xs + 1, ye - ys + 1)
 
         self.requestTiles()
 
@@ -79,7 +78,8 @@ class MapGraphicScene(QtGui.QGraphicsScene):
         numYtiles = tilesRect.height()+1
         left = tilesRect.left()
         top = tilesRect.top()
-        pixRect = QtCore.QRectF(0.0, 0.0, TDIM, TDIM)
+        tdim = self._tileSource.tileSize()
+        pixRect = QRectF(0.0, 0.0, tdim, tdim)
         emptyTilePix = self._emptyTile
         tilePixmaps = self._tilePixmaps
         for x in xrange(numXtiles):
@@ -92,7 +92,8 @@ class MapGraphicScene(QtGui.QGraphicsScene):
                     painter.drawPixmap(box, emptyTilePix, pixRect)
 
     def zoomTo(self, zoomlevel):
-        if zoomlevel > MAX_ZOOM or zoomlevel < MIN_ZOOM:
+        tileSource = self._tileSource
+        if zoomlevel > tileSource.maxZoom() or zoomlevel < tileSource.minZoom():
             return
 
         self._tilePixmaps = dict()
@@ -111,7 +112,7 @@ class MapGraphicScene(QtGui.QGraphicsScene):
     def zoomOut(self):
         self.zoomTo(self._zoom-1)
 
-    @Qt.pyqtSlot(int, int, int, QtGui.QPixmap)
+    @pyqtSlot(int, int, int, QPixmap)
     def setTilePixmap(self, x, y, zoom, pixmap):
         if self._zoom == zoom:
             self._tilePixmaps[(x, y)] = pixmap
@@ -147,16 +148,17 @@ class MapGraphicScene(QtGui.QGraphicsScene):
             self.update()
 
     def tileRect(self, tx, ty):
-        return QtCore.QRectF(tx * TDIM, ty * TDIM, TDIM, TDIM)
+        tdim = self._tileSource.tileSize()
+        return QRectF(tx * tdim, ty * tdim, tdim, tdim)
 
     def setSize(self, width, height):
-        rect = QtCore.QRectF(self.sceneRect())
+        rect = QRectF(self.sceneRect())
         rect.setWidth(width)
         rect.setHeight(height)
         self.setSceneRect(rect)
 
     def setCenter(self, lat, lon):
-        rect = QtCore.QRectF(self.sceneRect())
+        rect = QRectF(self.sceneRect())
         pos = self.posFromLatLon(lat, lon)
         rect.moveCenter(pos)
         self.setSceneRect(rect)
@@ -166,25 +168,24 @@ class MapGraphicScene(QtGui.QGraphicsScene):
 
     def posFromLatLon(self, lat, lon):
         zn = 1 << self._zoom
-        zn = zn * TDIM
+        zn = zn * self._tileSource.tileSize()
         tx = (lon+180.0)/360.0
         ty = (1.0 - m_log(m_tan(lat*m_PI/180.0) + 1.0/m_cos(lat*m_PI/180.0)) / m_PI) / 2.0
-        return QtCore.QPointF(tx*zn, ty*zn)
+        return QPointF(tx*zn, ty*zn)
 
     def lonLatFromPos(self, x, y):
-        tx = x / float(TDIM)
-        ty = y / float(TDIM)
-
+        tdim = float(self._tileSource.tileSize())
+        tx = x / tdim
+        ty = y / tdim
         zn = 1 << self._zoom
         lon = tx / zn * 360.0 - 180.0
         n = m_PI - 2.0 * m_PI * ty / zn
         lat = 180.0 / m_PI * m_atan(0.5 * (m_exp(n) - m_exp(-n)))
-        return QtCore.QPointF(lon, lat)
+        return QPointF(lon, lat)
 
     def tileFromPos(self, x, y):
-        tx = x / float(TDIM)
-        ty = y / float(TDIM)
-        return QtCore.QPointF(tx, ty)
+        tdim = float(self._tileSource.tileSize())
+        return QPointF(x / tdim, y / tdim)
 
     def addEllipse(self, longitude, latitude, radius):
         item = MapGraphicsEllipseItem(longitude, latitude, radius, self)

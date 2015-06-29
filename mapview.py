@@ -1,30 +1,31 @@
-from PyQt4 import Qt, QtCore, QtGui
+from PyQt4.Qt import Qt
+from PyQt4.QtGui import QGraphicsView
 
 from mapscene import MapGraphicScene
 from maptilesource import MapTileSourceOSM, MapTileSourceHereDemo
 
 
-class MapGraphicsView(QtGui.QGraphicsView):
+class MapGraphicsView(QGraphicsView):
 
     _lastMousePos = None
 
     def __init__(self, parent=None):
-        QtGui.QGraphicsView.__init__(self, parent=parent)
-        scene = MapGraphicScene(MapTileSourceHereDemo())
+        QGraphicsView.__init__(self, parent=parent)
+        scene = MapGraphicScene(MapTileSourceOSM())
         self.setScene(scene)
 
     def resizeEvent(self, event):
-        QtGui.QGraphicsView.resizeEvent(self, event)
+        QGraphicsView.resizeEvent(self, event)
         size = event.size()
         self.scene().setSize(size.width(), size.height())
 
     def mousePressEvent(self, event):
-        if event.buttons() == QtCore.Qt.LeftButton:
+        if event.buttons() == Qt.LeftButton:
             event.accept()
             self._lastMousePos = event.pos()
 
     def mouseMoveEvent(self, event):
-        if event.buttons() == QtCore.Qt.LeftButton:
+        if event.buttons() == Qt.LeftButton:
             event.accept()
             delta = self._lastMousePos - event.pos()
             self._lastMousePos = event.pos()

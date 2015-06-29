@@ -1,14 +1,14 @@
-from PyQt4 import Qt, QtCore, QtGui
+from PyQt4.QtGui import QGraphicsEllipseItem
 
 
-class MapGraphicsEllipseItem(QtGui.QGraphicsEllipseItem):
+class MapGraphicsEllipseItem(QGraphicsEllipseItem):
 
     _lon = None
     _lat = None
     _radius = None
 
     def __init__(self, longitude, latitude, radius, scene, parent=None):
-        QtGui.QGraphicsEllipseItem.__init__(self, parent=parent, scene=scene)
+        QGraphicsEllipseItem.__init__(self, parent=parent, scene=scene)
 
         self._lon = longitude
         self._lat = latitude
