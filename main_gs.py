@@ -87,6 +87,9 @@ class MapZoom(QtGui.QMainWindow):
             pointItem = view.scene().addEllipse(p[1], p[0], 5.0)
             pointItem.setBrush(Qt.Qt.black)
 
+        lineItem = view.scene().addLine(10.191037, 44.832810, 10.201736, 44.837632)
+        lineItem.setPen(Qt.Qt.blue)
+
         #self.map.addLines(POINTS, width=4, color=Qt.Qt.red)
 
     def aboutOsm(self):

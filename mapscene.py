@@ -10,7 +10,7 @@ from PyQt4.Qt import Qt, pyqtSlot
 from PyQt4.QtCore import QRect, QRectF, QPointF
 from PyQt4.QtGui import QGraphicsScene, QPixmap
 
-from mapitems import MapGraphicsEllipseItem
+from mapitems import MapGraphicsEllipseItem, MapGraphicsLineItem
 
 
 def qHash(point):
@@ -188,5 +188,9 @@ class MapGraphicScene(QGraphicsScene):
         return QPointF(x / tdim, y / tdim)
 
     def addEllipse(self, longitude, latitude, radius):
-        item = MapGraphicsEllipseItem(longitude, latitude, radius, self)
+        item = MapGraphicsEllipseItem(longitude, latitude, radius, scene=self)
+        return item
+
+    def addLine(self, lon0, lat0, lon1, lat1):
+        item = MapGraphicsLineItem(lon0, lat0, lon1, lat1, scene=self)
         return item
