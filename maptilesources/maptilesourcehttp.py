@@ -1,74 +1,50 @@
-import os
-
 from PyQt4.Qt import Qt, pyqtSignal, pyqtSlot
 from PyQt4.QtCore import QObject, QByteArray, QUrl, QThread
 from PyQt4.QtGui import QDesktopServices, QPixmap
 from PyQt4.QtNetwork import QNetworkRequest, QNetworkDiskCache, QNetworkAccessManager, \
                             QNetworkReply,  QNetworkCacheMetaData
 
-
-class MapTileSource(QObject):
-
-    tileReceived = pyqtSignal(int, int, int, QPixmap)
-
-    _tileSize = None
-    _minZoom = None
-    _maxZoom = None
-
-    def __init__(self, tileSize=256, minZoom=2, maxZoom=18, parent=None):
-        QObject.__init__(self, parent=parent)
-        self._tileSize = tileSize
-        self._minZoom = minZoom
-        self._maxZoom = maxZoom
-
-    def tileSize(self):
-        return self._tileSize
-
-    def maxZoom(self):
-        return self._maxZoom
-
-    def minZoom(self):
-        return self._minZoom
-
-    def requestTile(self, x, y, zoom):
-        raise NotImplementedError()
-
-    def abortAllRequests(self):
-        pass
+from maptilesource import MapTileSource
 
 
-class MapTileSourceDirectory(MapTileSource):
+class MapTileHTTPCache(QNetworkDiskCache):
 
-    _directory = None
-    _fnameSuffix = None
+    def __init__(self, directory=None, maxSize=104857600, parent=None):
+        QNetworkDiskCache.__init__(self, parent=parent)
 
-    def __init__(self, directory, filenameSuffix='.png', tileSize=256, minZoom=2, maxZoom=18, parent=None):
-        MapTileSource.__init__(self, tileSize=tileSize, minZoom=minZoom, maxZoom=maxZoom, parent=parent)
-        self._directory = directory
-        self._fnameSuffix = filenameSuffix
+        if directory is None:
+            directory = str(QDesktopServices.storageLocation(QDesktopServices.CacheLocation))
 
-    def tileSize(self):
-        return self._tileSize
+        self.setMaximumCacheSize(maxSize)
+        self.setCacheDirectory(directory)
 
-    def maxZoom(self):
-        return self._maxZoom
+    def __contains__(self, url):
+        return self.metaData(url).isValid()
 
-    def minZoom(self):
-        return self._minZoom
+    def __getitem__(self, url):
+        iodevice = self.data(url)
+        if iodevice is None:
+            return None
+        data = iodevice.readAll()
+        iodevice.close()
+        iodevice.deleteLater()
+        return data
 
-    def requestTile(self, x, y, zoom):
-        filename = os.path.join(self._directory, str(zoom), str(x), str(y)+self._fnameSuffix)
-        if os.path.exists(filename):
-            return QPixmap(filename)
-        return None
+    def __setitem__(self, url, data):
+        meta = QNetworkCacheMetaData()
+        meta.setUrl(url)
+        meta.setSaveToDisk(True)
+        iodevice = self.prepare(meta)
+        iodevice.write(data)
+        self.insert(iodevice)
+
+    def __delitem__(self, url):
+        self.remove(url)
 
 
 class MapTileHTTPLoader(QObject):
 
     tileLoaded = pyqtSignal(int, int, int, QByteArray)
-
-    _userAgent = None
-    _cacheSize = None
 
     def __init__(self, cacheSize=1024*1024*100, userAgent='(PyQt) TileMap 1.2', parent=None):
         QObject.__init__(self, parent=parent)
@@ -123,7 +99,6 @@ class MapTileHTTPLoader(QObject):
             self.tileLoaded.emit(tp[0], tp[1], tp[2], data)
         reply.close()
         reply.deleteLater()
-        print 'In download:', len(self._tileInDownload)
 
     @pyqtSlot()
     def abortRequest(self, x, y, zoom):
@@ -144,12 +119,6 @@ class MapTileSourceHTTP(MapTileSource):
 
     requestTileLoading = pyqtSignal(int, int, int, str)
     abortTileLoading = pyqtSignal()
-
-    _userAgent = None
-    _manager = None
-    _tileInDownload = None
-    _cache = None
-    _thread = None
 
     def __init__(self, cacheSize=1024*1024*100, userAgent='(PyQt) TileMap 1.2',
                  tileSize=256, minZoom=2, maxZoom=18, parent=None):
@@ -184,32 +153,3 @@ class MapTileSourceHTTP(MapTileSource):
 
     def imageFormat(self):
         return 'PNG'
-
-
-class MapTileSourceOSM(MapTileSourceHTTP):
-
-    def __init__(self, parent=None):
-        MapTileSourceHTTP.__init__(self, parent=parent)
-
-    def url(self, x, y, zoom):
-        url = "http://tile.openstreetmap.org/%d/%d/%d.png" % (zoom, x, y)
-        return url
-
-
-class MapTileSourceHereDemo(MapTileSourceHTTP):
-
-    _server = None
-
-    def __init__(self, tileSize=256, parent=None):
-        MapTileSourceHTTP.__init__(self, tileSize=tileSize, parent=parent)
-        assert tileSize == 256 or tileSize == 512
-        self._server = 0
-
-    def url(self, x, y, zoom):
-        self._server += 1
-        if self._server > 4:
-            self._server = 0
-        url = "http://%d.base.maps.cit.api.here.com/maptile/2.1/maptile/" % self._server
-        url += "newest/normal.day/%d/%d/%d/%d/png8" % (zoom, x, y, self._tileSize)
-        url += '?app_id=DemoAppId01082013GAL&app_code=AJKnXv84fjrb0KIHawS0Tg'
-        return url
