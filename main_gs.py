@@ -1,7 +1,7 @@
-import sys
-from PyQt4 import Qt, QtCore, QtGui
+from PyQt4 import Qt, QtGui
 
 from mapview import MapGraphicsView
+from maptilesources.maptilesourcehere import MapTileSourceHere
 
 
 POINTS = [(44.837632, 10.201736),
@@ -60,53 +60,46 @@ POINTS = [(44.837632, 10.201736),
 
 
 class MapZoom(QtGui.QMainWindow):
+
     def __init__(self):
         QtGui.QMainWindow.__init__(self)
 
-        view = MapGraphicsView()
+        view = MapGraphicsView(tileSource=MapTileSourceHere())
 
         self.setCentralWidget(view)
 
-        nightModeAction = QtGui.QAction("&Night Mode", self)
-        nightModeAction.setCheckable(True)
-        nightModeAction.setChecked(False)
-        osmAction = QtGui.QAction("&About OpenStreetMap", self)
-        #nightModeAction.triggered.connect(self.map.toggleNightMode)
-        osmAction.triggered.connect(self.aboutOsm)
+        view.scene().setCenter(10.065990, 44.861041)
 
-        menu = self.menuBar().addMenu("&Options")
-        menu.addSeparator()
-        menu.addAction(nightModeAction)
-        menu.addAction(osmAction)
-
-        view.scene().setCenter(44.861041, 10.065990)
         pointItem = view.scene().addEllipse(10.068640, 44.860767, 5.0)
         pointItem.setBrush(Qt.Qt.black)
+        pointItem.setToolTip('10.068640, 44.860767')
+        pointItem.setFlag(QtGui.QGraphicsItem.ItemIsSelectable, True)
 
+        lats = list()
+        lons = list()
         for p in POINTS:
-            pointItem = view.scene().addEllipse(p[1], p[0], 5.0)
+            pointItem = view.scene().addEllipse(p[1], p[0], 10.0)
             pointItem.setBrush(Qt.Qt.black)
+            pointItem.setToolTip('%f, %f' % (p[1], p[0]))
+            pointItem.setFlag(QtGui.QGraphicsItem.ItemIsSelectable, True)
+            lons.append(p[1])
+            lats.append(p[0])
 
         lineItem = view.scene().addLine(10.191037, 44.832810, 10.201736, 44.837632)
         lineItem.setPen(Qt.Qt.blue)
 
-        #self.map.addLines(POINTS, width=4, color=Qt.Qt.red)
-
-    def aboutOsm(self):
-        QtGui.QDesktopServices.openUrl(QtCore.QUrl("http://www.openstreetmap.org"))
+        polylineItem = view.scene().addPolyline(lons, lats)
+        polylineItem.setPen(Qt.Qt.red)
 
 
 if __name__ == '__main__':
-    app = QtGui.QApplication(sys.argv)
+    app = QtGui.QApplication([])
     app.setApplicationName("TileMap")
 
     w = MapZoom()
     w.setWindowTitle("OpenStreetMap")
 
-    if False:
-        w.showMaximized()
-    else:
-        w.resize(800, 600)
-        w.show()
+    w.resize(800, 600)
+    w.show()
 
-    sys.exit(app.exec_())
+    app.exec_()

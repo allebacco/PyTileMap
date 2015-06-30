@@ -1,12 +1,10 @@
+import numpy as np
+
 from PyQt4.QtCore import QLineF
-from PyQt4.QtGui import QGraphicsEllipseItem, QGraphicsLineItem
+from PyQt4.QtGui import QGraphicsEllipseItem, QGraphicsLineItem, QGraphicsPathItem, QPainterPath
 
 
 class MapGraphicsEllipseItem(QGraphicsEllipseItem):
-
-    _lon = None
-    _lat = None
-    _radius = None
 
     def __init__(self, longitude, latitude, radius, scene, parent=None):
         QGraphicsEllipseItem.__init__(self, parent=parent, scene=scene)
@@ -18,22 +16,19 @@ class MapGraphicsEllipseItem(QGraphicsEllipseItem):
         self.updatePosition(scene)
 
     def updatePosition(self, scene):
-        pos = scene.posFromLatLon(self._lat, self._lon)
+        pos = scene.posFromLonLat(self._lon, self._lat)
         r = self._radius
         self.setRect(pos.x()-r, pos.y()-r, r, r)
 
     def setLonLat(self, longitude, latitude):
         self._lon = longitude
         self._lat = latitude
-        self.updatePosition(self.scene())
+        scene = self.scene()
+        if scene is not None:
+            self.updatePosition(scene)
 
 
 class MapGraphicsLineItem(QGraphicsLineItem):
-
-    _lon0 = None
-    _lat0 = None
-    _lon1 = None
-    _lat1 = None
 
     def __init__(self, lon0, lat0, lon1, lat1, scene, parent=None):
         QGraphicsLineItem.__init__(self, parent=parent, scene=scene)
@@ -46,8 +41,8 @@ class MapGraphicsLineItem(QGraphicsLineItem):
         self.updatePosition(scene)
 
     def updatePosition(self, scene):
-        pos0 = scene.posFromLatLon(self._lat0, self._lon0)
-        pos1 = scene.posFromLatLon(self._lat1, self._lon1)
+        pos0 = scene.posFromLonLat(self._lon0, self._lat0)
+        pos1 = scene.posFromLonLat(self._lon1, self._lat1)
 
         self.setLine(QLineF(pos0, pos1))
 
@@ -59,3 +54,35 @@ class MapGraphicsLineItem(QGraphicsLineItem):
         scene = self.scene()
         if scene is not None:
             self.updatePosition(self.scene())
+
+
+class MapGraphicsPolylineItem(QGraphicsPathItem):
+
+    def __init__(self, longitudes, latitudes, scene, parent=None):
+        QGraphicsPathItem.__init__(self, parent=parent, scene=scene)
+
+        assert len(longitudes) == len(latitudes)
+
+        self._longitudes = np.array(longitudes)
+        self._latitudes = np.array(latitudes)
+
+    def updatePosition(self, scene):
+        path = QPainterPath()
+
+        count = len(self._longitudes)
+        if count > 0:
+            x, y = scene.posFromLonLat(self._longitudes, self._latitudes)
+            path.moveTo(x[0], y[0])
+            for i in xrange(count):
+                path.lineTo(x[i], y[i])
+
+        self.setPath(path)
+
+    def setLonLat(self, longitudes, latitudes):
+        assert len(longitudes) == len(latitudes)
+
+        self._longitudes = np.array(longitudes)
+        self._latitudes = np.array(latitudes)
+        scene = self.scene()
+        if scene is not None:
+            self.updatePosition(scene)

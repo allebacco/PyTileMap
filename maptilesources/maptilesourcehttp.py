@@ -1,5 +1,5 @@
 from PyQt4.Qt import Qt, pyqtSignal, pyqtSlot
-from PyQt4.QtCore import QObject, QByteArray, QUrl, QThread
+from PyQt4.QtCore import QObject, QByteArray, QUrl, QThread, QDateTime
 from PyQt4.QtGui import QDesktopServices, QPixmap
 from PyQt4.QtNetwork import QNetworkRequest, QNetworkDiskCache, QNetworkAccessManager, \
                             QNetworkReply,  QNetworkCacheMetaData
@@ -19,9 +19,11 @@ class MapTileHTTPCache(QNetworkDiskCache):
         self.setCacheDirectory(directory)
 
     def __contains__(self, url):
+        assert isinstance(url, QUrl)
         return self.metaData(url).isValid()
 
     def __getitem__(self, url):
+        assert isinstance(url, QUrl)
         iodevice = self.data(url)
         if iodevice is None:
             return None
@@ -31,14 +33,18 @@ class MapTileHTTPCache(QNetworkDiskCache):
         return data
 
     def __setitem__(self, url, data):
+        assert isinstance(url, QUrl)
+        assert isinstance(data, QByteArray)
         meta = QNetworkCacheMetaData()
         meta.setUrl(url)
         meta.setSaveToDisk(True)
+        meta.setExpirationDate(QDateTime.currentDateTime().addDays(7))
         iodevice = self.prepare(meta)
         iodevice.write(data)
         self.insert(iodevice)
 
     def __delitem__(self, url):
+        assert isinstance(url, QUrl)
         self.remove(url)
 
 
@@ -59,17 +65,13 @@ class MapTileHTTPLoader(QObject):
         if self._manager is None:
             self._manager = QNetworkAccessManager(parent=self)
             self._manager.finished.connect(self.handleNetworkData)
-            self._cache = QNetworkDiskCache(parent=self)
-            self._cache.setMaximumCacheSize(self._cacheSize)
-            self._cache.setCacheDirectory(QDesktopServices.storageLocation(QDesktopServices.CacheLocation))
+            self._cache = MapTileHTTPCache(maxSize=self._cacheSize, parent=self)
 
         key = (x, y, zoom)
         url = QUrl(url)
-        if self._cache.metaData(url).isValid():
-            iodevice = self._cache.data(url)
-            data = iodevice.readAll()
-            iodevice.close()
-            iodevice.deleteLater()
+        if url in self._cache:
+            print 'from cache'
+            data = self._cache[url]
             self.tileLoaded.emit(x, y, zoom, data)
         elif key in self._tileInDownload:
             # Image is already in download... return
@@ -90,12 +92,7 @@ class MapTileHTTPLoader(QObject):
 
         if not reply.error():
             data = reply.readAll()
-            meta = QNetworkCacheMetaData()
-            meta.setUrl(reply.request().url())
-            meta.setSaveToDisk(True)
-            iodevice = self._cache.prepare(meta)
-            iodevice.write(data)
-            self._cache.insert(iodevice)
+            self._cache[reply.request().url()] = data
             self.tileLoaded.emit(tp[0], tp[1], tp[2], data)
         reply.close()
         reply.deleteLater()

@@ -42,7 +42,7 @@ class MapTileSourceHere(MapTileSourceHTTP):
         if self._server > 4:
             self._server = 0
 
-        url = "http://%d.base.maps.%sapi.here.com/maptile/2.1/maptile/" % (self._server, self._cit)
+        url = "http://%d.base.maps%s.api.here.com/maptile/2.1/maptile/" % (self._server, self._cit)
         url += "newest/%s/%d/%d/%d/%d/png8" % (self._scheme, zoom, x, y, self._tileSize)
         url += '?app_id=%s&app_code=%s' % (self._app_id, self._app_code)
         return url

@@ -1,29 +1,30 @@
-from math import log as m_log
-from math import tan as m_tan
-from math import pi as m_PI
-from math import cos as m_cos
-from math import atan as m_atan
-from math import exp as m_exp
-from math import floor as m_floor
+from numpy import log, tan, cos, arctan, exp, floor
+from numpy import pi as PI
 
 from PyQt4.Qt import Qt, pyqtSlot
-from PyQt4.QtCore import QRect, QRectF, QPointF
+from PyQt4.QtCore import QRect, QRectF, QPointF, QSizeF
 from PyQt4.QtGui import QGraphicsScene, QPixmap
 
-from mapitems import MapGraphicsEllipseItem, MapGraphicsLineItem
+from mapitems import MapGraphicsEllipseItem, MapGraphicsLineItem, MapGraphicsPolylineItem
 
-
-def qHash(point):
-    '''Qt doesn't implement a qHash() for QPoint.'''
-    return (point.x(), point.y())
+PI_div_180 = PI / 180.0
+PI_div_180_inv = 180.0 / PI
+PI2 = PI * 2.0
 
 
 class MapGraphicScene(QGraphicsScene):
-
-    _tileSource = None
+    """Graphics scene for showing a slippy map.
+    """
 
     def __init__(self, tileSource, parent=None):
+        """Constructor.
+
+        Args:
+            tileSource(MapTileSource): Source for loading the tiles.
+            parent(QObject): Parent object, default `None`
+        """
         QGraphicsScene.__init__(self)
+
         self._zoom = 15
 
         self._tileSource = tileSource
@@ -42,7 +43,15 @@ class MapGraphicScene(QGraphicsScene):
         self.setSceneRect(0.0, 0.0, 400, 300)
         self.sceneRectChanged.connect(self.onSceneRectChanged)
 
+    @pyqtSlot(QRectF)
     def onSceneRectChanged(self, rect):
+        """Callback for the changing of the visible rect.
+
+        Evaluate the visible tiles and request to load the new tiles.
+
+        Args:
+            rect(QRectF): Current visible area.
+        """
         tdim = self._tileSource.tileSize()
         center = rect.center()
         ct = self.tileFromPos(center.x(), center.y())
@@ -52,8 +61,8 @@ class MapGraphicScene(QGraphicsScene):
         width = rect.width()
         height = rect.height()
         # top left corner of the center tile
-        xp = int(width / 2.0 - (tx - m_floor(tx)) * tdim)
-        yp = int(height / 2.0 - (ty - m_floor(ty)) * tdim)
+        xp = int(width / 2.0 - (tx - floor(tx)) * tdim)
+        yp = int(height / 2.0 - (ty - floor(ty)) * tdim)
 
         # first tile vertical and horizontal
         xa = (xp + tdim - 1) / tdim
@@ -73,6 +82,14 @@ class MapGraphicScene(QGraphicsScene):
         self.update()
 
     def drawBackground(self, painter, rect):
+        """Draw the background tiles.
+
+        If a tile is not available, draw a gray rectangle.
+
+        Args:
+            painter(QPainter): Painter for drawing.
+            rect(QRectF): Current visible area.
+        """
         tilesRect = self._tilesRect
         numXtiles = tilesRect.width()+1
         numYtiles = tilesRect.height()+1
@@ -92,6 +109,17 @@ class MapGraphicScene(QGraphicsScene):
                     painter.drawPixmap(box, emptyTilePix, pixRect)
 
     def zoomTo(self, zoomlevel):
+        """Zoom to a specific zoom level.
+
+        If the level is out of range, the zoom action is ignored.
+
+        clear the current tile cache, evaluate the new center and
+        update the position of all the items.
+
+        Args:
+            zoomlevel(int): New zoom level.
+        """
+
         tileSource = self._tileSource
         if zoomlevel > tileSource.maxZoom() or zoomlevel < tileSource.minZoom():
             return
@@ -104,25 +132,43 @@ class MapGraphicScene(QGraphicsScene):
         self._zoom = zoomlevel
         for item in self.items():
             item.updatePosition(self)
-        self.setCenter(coord.y(), coord.x())
+        self.setCenter(coord.x(), coord.y())
 
     def zoomIn(self):
+        """Increments the zoom level
+        """
         self.zoomTo(self._zoom+1)
 
     def zoomOut(self):
+        """Decrements the zoom level
+        """
         self.zoomTo(self._zoom-1)
 
     @pyqtSlot(int, int, int, QPixmap)
     def setTilePixmap(self, x, y, zoom, pixmap):
+        """Set the image of the tile.
+
+        Args:
+            x(int): X coordinate of the tile.
+            y(int): Y coordinate of the tile.
+            zoom(int): Zoom coordinate of the tile.
+            pixmap(QPixmap): Image for the tile.
+        """
         if self._zoom == zoom:
             self._tilePixmaps[(x, y)] = pixmap
             self.update()
 
     def requestTiles(self):
+        """Request the loading of tiles.
+
+        Remove from the cache the farthest tiles.
+        Check the loaded tiles and request the requests only
+        the missing tiles.
+        """
         tilesRect = self._tilesRect
         tilePixmaps = self._tilePixmaps
 
-        # purge unused tiles
+        # Purge unused tiles
         bound = tilesRect.adjusted(-10, -10, 10, 10)
         for p in list(tilePixmaps.keys()):
             if not bound.contains(p[0], p[1]):
@@ -139,6 +185,7 @@ class MapGraphicScene(QGraphicsScene):
         for x in xrange(numXtiles):
             for y in xrange(numYtiles):
                 tp = (left + x, top + y)
+                # Request tile only if missing
                 if tp not in tilePixmaps:
                     pix = tileSource.requestTile(tp[0], tp[1], zoom)
                     if pix is not None:
@@ -148,42 +195,113 @@ class MapGraphicScene(QGraphicsScene):
             self.update()
 
     def tileRect(self, tx, ty):
+        """Area fro a specific tile.
+
+        Args:
+            tx(int): X coordinate of the tile.
+            ty(int): Y coordinate of the tile.
+
+        Returns:
+            QRectF, the area of the tile.
+        """
         tdim = self._tileSource.tileSize()
         return QRectF(tx * tdim, ty * tdim, tdim, tdim)
 
     def setSize(self, width, height):
+        """Set the size of the visible area in pixels.
+
+        Update the scene rect.
+
+        Args:
+            width(int): Width of the visible area.
+            height(int): Height of the visible area.
+        """
         rect = QRectF(self.sceneRect())
-        rect.setWidth(width)
-        rect.setHeight(height)
+        rect.setSize(QSizeF(width, height))
         self.setSceneRect(rect)
 
-    def setCenter(self, lat, lon):
+    def setCenter(self, lon, lat):
+        """Move the center of the visible area to new coordinates.
+
+        Update the scene rect.
+
+        Args:
+            lon(float): New longitude of the center.
+            lat(float): New latitude of the center.
+        """
         rect = QRectF(self.sceneRect())
-        pos = self.posFromLatLon(lat, lon)
+        pos = self.posFromLonLat(lon, lat)
         rect.moveCenter(pos)
         self.setSceneRect(rect)
 
     def translate(self, dx, dy):
+        """Translate the visible area by dx, dy pixels.
+
+        Update the scene rect.
+
+        Args:
+            dx(int): Increments for the center x coord in pixels.
+            dy(int): Increments for the center y coord in pixels.
+        """
         self.setSceneRect(self.sceneRect().translated(dx, dy))
 
-    def posFromLatLon(self, lat, lon):
+    def posFromLonLat(self, lon, lat):
+        """Position in scene coordinate of the WGS84 coordinates.
+
+        Convert from WGS84 reference system to scene reference system.
+
+        Args:
+            lon(float or numpy.ndarray): Longitude value or values.
+            lat(float or numpy.ndarray): Latitude value or values.
+
+        Returns:
+            If input data is float, QPointF with the position of the input coordinate.
+            If input data is array, tuple of numpy.ndarray (x, y) with the positions of the input coordinates.
+        """
         zn = 1 << self._zoom
-        zn = zn * self._tileSource.tileSize()
+        zn = float(zn * self._tileSource.tileSize())
         tx = (lon+180.0)/360.0
-        ty = (1.0 - m_log(m_tan(lat*m_PI/180.0) + 1.0/m_cos(lat*m_PI/180.0)) / m_PI) / 2.0
-        return QPointF(tx*zn, ty*zn)
+        ty = (1.0 - log(tan(lat*PI_div_180) + 1.0/cos(lat*PI_div_180)) / PI) / 2.0
+        tx *= zn
+        ty *= zn
+        if isinstance(tx, float):
+            return QPointF(tx, ty)
+        return (tx, ty)
 
     def lonLatFromPos(self, x, y):
+        """Position in WGS84 coordinate of the scene coordinates.
+
+        Convert from scene reference system to WGS84 reference system.
+
+        Args:
+            x(float, int or numpy.ndarray): X value or values.
+            y(float, int or numpy.ndarray): Y value or values.
+
+        Returns:
+            If input data is float, QPointF with the coordinate of the input position.
+            If input data is array, tuple of numpy.ndarray (x, y) with the coordinates of the input positions.
+        """
         tdim = float(self._tileSource.tileSize())
         tx = x / tdim
         ty = y / tdim
         zn = 1 << self._zoom
         lon = tx / zn * 360.0 - 180.0
-        n = m_PI - 2.0 * m_PI * ty / zn
-        lat = 180.0 / m_PI * m_atan(0.5 * (m_exp(n) - m_exp(-n)))
-        return QPointF(lon, lat)
+        n = PI - PI2 * ty / zn
+        lat = PI_div_180_inv * arctan(0.5 * (exp(n) - exp(-n)))
+        if isinstance(lon, float):
+            return QPointF(lon, lat)
+        return (lon, lat)
 
     def tileFromPos(self, x, y):
+        """Tile in the selected position.
+
+        Args:
+            x(float, int): X value for position.
+            y(float, int): Y value for position.
+
+        Returns:
+            QPointF with the coordinates of the tile.
+        """
         tdim = float(self._tileSource.tileSize())
         return QPointF(x / tdim, y / tdim)
 
@@ -193,4 +311,8 @@ class MapGraphicScene(QGraphicsScene):
 
     def addLine(self, lon0, lat0, lon1, lat1):
         item = MapGraphicsLineItem(lon0, lat0, lon1, lat1, scene=self)
+        return item
+
+    def addPolyline(self, longitudes, latitudes):
+        item = MapGraphicsPolylineItem(longitudes, latitudes, scene=self)
         return item
