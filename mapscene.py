@@ -65,18 +65,17 @@ class MapGraphicScene(QGraphicsScene):
         yp = int(height / 2.0 - (ty - floor(ty)) * tdim)
 
         # first tile vertical and horizontal
-        xa = (xp + tdim - 1) / tdim
-        ya = (yp + tdim - 1) / tdim
-        xs = tx - xa
-        ys = ty - ya
+        xs = tx - (xp + tdim - 1) / tdim
+        ys = ty - (yp + tdim - 1) / tdim
 
         # last tile vertical and horizontal
-        xe = tx + (width - xp - 1) / tdim + 1
-        ye = ty + (height - yp - 1) / tdim + 1
+        xe = (width - xp - 1) / tdim - xs + 1 + tx
+        ye = (height - yp - 1) / tdim - ys + 1 + ty
 
-        # build a rect
-        self._tilesRect = QRect(xs, ys, xe - xs + 1, ye - ys + 1)
+        # define the rect of visible tiles
+        self._tilesRect = QRect(xs, ys, xe, ye)
 
+        # Request the loading of new tiles (if needed)
         self.requestTiles()
 
         self.update()
@@ -91,10 +90,10 @@ class MapGraphicScene(QGraphicsScene):
             rect(QRectF): Current visible area.
         """
         tilesRect = self._tilesRect
-        numXtiles = tilesRect.width()+1
-        numYtiles = tilesRect.height()+1
         left = tilesRect.left()
         top = tilesRect.top()
+        numXtiles = tilesRect.width()
+        numYtiles = tilesRect.height()
         tdim = self._tileSource.tileSize()
         pixRect = QRectF(0.0, 0.0, tdim, tdim)
         emptyTilePix = self._emptyTile
@@ -103,10 +102,9 @@ class MapGraphicScene(QGraphicsScene):
             for y in xrange(numYtiles):
                 tp = (x + left, y + top)
                 box = self.tileRect(tp[0], tp[1])
-                if tp in self._tilePixmaps:
-                    painter.drawPixmap(box, tilePixmaps[tp], pixRect)
-                else:
-                    painter.drawPixmap(box, emptyTilePix, pixRect)
+                # Use default gray image if tile image is missing
+                pix = tilePixmaps.get(tp, emptyTilePix)
+                painter.drawPixmap(box, pix, pixRect)
 
     def zoomTo(self, zoomlevel):
         """Zoom to a specific zoom level.
@@ -124,7 +122,7 @@ class MapGraphicScene(QGraphicsScene):
         if zoomlevel > tileSource.maxZoom() or zoomlevel < tileSource.minZoom():
             return
 
-        self._tilePixmaps = dict()
+        self._tilePixmaps.clear()
         self._tileSource.abortAllRequests()
 
         center = self.sceneRect().center()
@@ -156,7 +154,7 @@ class MapGraphicScene(QGraphicsScene):
         """
         if self._zoom == zoom:
             self._tilePixmaps[(x, y)] = pixmap
-            self.update()
+        self.update()
 
     def requestTiles(self):
         """Request the loading of tiles.
@@ -306,6 +304,16 @@ class MapGraphicScene(QGraphicsScene):
         return QPointF(x / tdim, y / tdim)
 
     def addEllipse(self, longitude, latitude, radius):
+        """Add a new circle (point) to the graphics scene.
+
+        Args:
+            longitude(float): Longitude of the center of the circle.
+            latitude(float): Latitude of the center of the circle.
+            radius(float): Longitude of the center of the circle.
+
+        Returns:
+            MapGraphicsEllipseItem added to the scene.
+        """
         item = MapGraphicsEllipseItem(longitude, latitude, radius, scene=self)
         return item
 
