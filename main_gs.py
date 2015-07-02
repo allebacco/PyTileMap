@@ -98,6 +98,14 @@ class MapZoom(QtGui.QMainWindow):
         pointItemPixmapOrigin = view.scene().addEllipse(10.090598, 44.857893, 3.0)
         pointItemPixmapOrigin.setBrush(Qt.Qt.black)
 
+        pointItemWithChild = view.scene().addEllipse(10.083103, 44.858014, 3.0)
+        pointItemWithChild.setBrush(Qt.Qt.blue)
+        pointItemWithChild.setPen(QtGui.QPen(Qt.Qt.NoPen))
+
+        textItem = QtGui.QGraphicsSimpleTextItem('Annotation\nfor blue point', parent=pointItemWithChild)
+        textItem.setBrush(QtGui.QBrush(QtGui.QColor(Qt.Qt.blue)))
+        textItem.setPos(-5, 3)
+
 
 if __name__ == '__main__':
     app = QtGui.QApplication([])

@@ -78,6 +78,7 @@ class MapGraphicScene(QGraphicsScene):
         # Request the loading of new tiles (if needed)
         self.requestTiles()
 
+        self.invalidate()
         self.update()
 
     def drawBackground(self, painter, rect):
@@ -129,7 +130,12 @@ class MapGraphicScene(QGraphicsScene):
         coord = self.lonLatFromPos(center.x(), center.y())
         self._zoom = zoomlevel
         for item in self.items():
-            item.updatePosition(self)
+            # Update position only of root items:
+            # the position of child items is referred to parent items.
+            if item.parentItem() is None:
+                item.updatePosition(self)
+            else:
+                print item.pos()
         self.setCenter(coord.x(), coord.y())
 
     def zoomIn(self):

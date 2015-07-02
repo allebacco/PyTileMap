@@ -1,6 +1,6 @@
 import numpy as np
 
-from PyQt4.QtCore import QLineF
+from PyQt4.QtCore import QLineF, QPointF
 from PyQt4.QtGui import QGraphicsEllipseItem, QGraphicsLineItem, QGraphicsPathItem, QPainterPath, QGraphicsPixmapItem
 
 
@@ -13,13 +13,16 @@ class MapGraphicsEllipseItem(QGraphicsEllipseItem):
         self._lat = latitude
         self._radius = radius
 
+        d = self._radius * 2
+        self.setRect(0, 0, d, d)
+
         self.updatePosition(scene)
 
     def updatePosition(self, scene):
         pos = scene.posFromLonLat(self._lon, self._lat)
         r = self._radius
-        d = r * 2
-        self.setRect(pos.x()-r, pos.y()-r, d, d)
+        self.prepareGeometryChange()
+        self.setPos(pos.x()-r, pos.y()-r)
 
     def setLonLat(self, longitude, latitude):
         self._lon = longitude
@@ -44,8 +47,11 @@ class MapGraphicsLineItem(QGraphicsLineItem):
     def updatePosition(self, scene):
         pos0 = scene.posFromLonLat(self._lon0, self._lat0)
         pos1 = scene.posFromLonLat(self._lon1, self._lat1)
+        deltaPos = pos1 - pos0
 
-        self.setLine(QLineF(pos0, pos1))
+        self.prepareGeometryChange()
+        self.setLine(QLineF(QPointF(0.0, 0.0), deltaPos))
+        self.setPos(pos0)
 
     def setLonLat(self, lon0, lat0, lon1, lat1):
         self._lon0 = lon0
@@ -70,12 +76,16 @@ class MapGraphicsPolylineItem(QGraphicsPathItem):
     def updatePosition(self, scene):
         path = QPainterPath()
 
+        self.prepareGeometryChange()
+
         count = len(self._longitudes)
         if count > 0:
             x, y = scene.posFromLonLat(self._longitudes, self._latitudes)
-            path.moveTo(x[0], y[0])
-            for i in xrange(count):
-                path.lineTo(x[i], y[i])
+            dx = x - x[0]
+            dy = y - y[0]
+            for i in xrange(1, count):
+                path.lineTo(dx[i], dy[i])
+            self.setPos(x[0], y[0])
 
         self.setPath(path)
 
@@ -120,6 +130,7 @@ class MapGraphicsPixmapItem(QGraphicsPixmapItem):
             scene(MapGraphicsScene): Scene the item belongs to.
         """
         pos = scene.posFromLonLat(self._lon, self._lat)
+        self.prepareGeometryChange()
         self.setPos(pos)
 
     def setLonLat(self, longitude, latitude):
