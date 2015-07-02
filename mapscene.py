@@ -5,7 +5,7 @@ from PyQt4.Qt import Qt, pyqtSlot
 from PyQt4.QtCore import QRect, QRectF, QPointF, QSizeF
 from PyQt4.QtGui import QGraphicsScene, QPixmap
 
-from mapitems import MapGraphicsEllipseItem, MapGraphicsLineItem, MapGraphicsPolylineItem
+from mapitems import MapGraphicsCircleItem, MapGraphicsLineItem, MapGraphicsPolylineItem
 
 PI_div_180 = PI / 180.0
 PI_div_180_inv = 180.0 / PI
@@ -98,6 +98,7 @@ class MapGraphicScene(QGraphicsScene):
         pixRect = QRectF(0.0, 0.0, tdim, tdim)
         emptyTilePix = self._emptyTile
         tilePixmaps = self._tilePixmaps
+
         for x in xrange(numXtiles):
             for y in xrange(numYtiles):
                 tp = (x + left, y + top)
@@ -122,14 +123,23 @@ class MapGraphicScene(QGraphicsScene):
         if zoomlevel > tileSource.maxZoom() or zoomlevel < tileSource.minZoom():
             return
 
+        # Get the coordinates of the center using the position in pixels
+        # of the center in previous zoom level
+        center = self.sceneRect().center()
+        coord = self.lonLatFromPos(center.x(), center.y())
+
+        # Set the new zoom level
+        self._zoom = zoomlevel
+
+        # Clear cache and abort active requests
         self._tilePixmaps.clear()
         self._tileSource.abortAllRequests()
 
-        center = self.sceneRect().center()
-        coord = self.lonLatFromPos(center.x(), center.y())
-        self._zoom = zoomlevel
+        # Evaluate the position of all the items for the current zoom level.
         for item in self.items():
             item.updatePosition(self)
+
+        # Update the position of the center
         self.setCenter(coord.x(), coord.y())
 
     def zoomIn(self):
@@ -172,14 +182,14 @@ class MapGraphicScene(QGraphicsScene):
             if not bound.contains(p[0], p[1]):
                 del tilePixmaps[p]
 
-        # Request load of new tiles
         numXtiles = tilesRect.width()
         numYtiles = tilesRect.height()
         left = tilesRect.left()
         top = tilesRect.top()
         tileSource = self._tileSource
         zoom = self._zoom
-        update = False
+
+        # Request load of new tiles
         for x in xrange(numXtiles):
             for y in xrange(numYtiles):
                 tp = (left + x, top + y)
@@ -188,9 +198,8 @@ class MapGraphicScene(QGraphicsScene):
                     pix = tileSource.requestTile(tp[0], tp[1], zoom)
                     if pix is not None:
                         tilePixmaps[tp] = pix
-                        update = True
-        if update:
-            self.update()
+
+        self.update()
 
     def tileRect(self, tx, ty):
         """Area fro a specific tile.
@@ -214,8 +223,7 @@ class MapGraphicScene(QGraphicsScene):
             width(int): Width of the visible area.
             height(int): Height of the visible area.
         """
-        rect = QRectF(self.sceneRect())
-        rect.setSize(QSizeF(width, height))
+        rect = QRectF(self.sceneRect().topLeft(), QSizeF(width, height))
         self.setSceneRect(rect)
 
     def setCenter(self, lon, lat):
@@ -303,8 +311,8 @@ class MapGraphicScene(QGraphicsScene):
         tdim = float(self._tileSource.tileSize())
         return QPointF(x / tdim, y / tdim)
 
-    def addEllipse(self, longitude, latitude, radius):
-        """Add a new circle (point) to the graphics scene.
+    def addCircle(self, longitude, latitude, radius):
+        """Add a new circle to the graphics scene.
 
         Args:
             longitude(float): Longitude of the center of the circle.
@@ -312,15 +320,35 @@ class MapGraphicScene(QGraphicsScene):
             radius(float): Longitude of the center of the circle.
 
         Returns:
-            MapGraphicsEllipseItem added to the scene.
+            MapGraphicsCircleItem added to the scene.
         """
-        item = MapGraphicsEllipseItem(longitude, latitude, radius, scene=self)
+        item = MapGraphicsCircleItem(longitude, latitude, radius, scene=self)
         return item
 
     def addLine(self, lon0, lat0, lon1, lat1):
+        """Add a newline) to the graphics scene.
+
+        Args:
+            lon0(float): Longitude of the start point.
+            lat0(float): Latitude of the start point.
+            lon1(float): Longitude of the end point.
+            lat2(float): Latitude of the end point.
+
+        Returns:
+            MapGraphicsLineItem added to the scene.
+        """
         item = MapGraphicsLineItem(lon0, lat0, lon1, lat1, scene=self)
         return item
 
     def addPolyline(self, longitudes, latitudes):
+        """Add a new circle (point) to the graphics scene.
+
+        Args:
+            longitudes(iterable): Longitudes of all the points of the polyline.
+            latitudes(iterable): Latitudes of all the points of the polyline.
+
+        Returns:
+            MapGraphicsPolylineItem added to the scene.
+        """
         item = MapGraphicsPolylineItem(longitudes, latitudes, scene=self)
         return item
