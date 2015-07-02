@@ -70,7 +70,7 @@ class MapZoom(QtGui.QMainWindow):
 
         view.scene().setCenter(10.065990, 44.861041)
 
-        pointItem = view.scene().addEllipse(10.068640, 44.860767, 5.0)
+        pointItem = view.scene().addEllipse(10.068640, 44.860767, 3.0)
         pointItem.setBrush(Qt.Qt.black)
         pointItem.setToolTip('10.068640, 44.860767')
         pointItem.setFlag(QtGui.QGraphicsItem.ItemIsSelectable, True)
@@ -78,7 +78,7 @@ class MapZoom(QtGui.QMainWindow):
         lats = list()
         lons = list()
         for p in POINTS:
-            pointItem = view.scene().addEllipse(p[1], p[0], 10.0)
+            pointItem = view.scene().addEllipse(p[1], p[0], 5.0)
             pointItem.setBrush(Qt.Qt.black)
             pointItem.setToolTip('%f, %f' % (p[1], p[0]))
             pointItem.setFlag(QtGui.QGraphicsItem.ItemIsSelectable, True)
@@ -90,6 +90,13 @@ class MapZoom(QtGui.QMainWindow):
 
         polylineItem = view.scene().addPolyline(lons, lats)
         polylineItem.setPen(Qt.Qt.red)
+
+        pix = QtGui.QPixmap(24, 24)
+        pix.fill(Qt.Qt.red)
+        pixmapItem = view.scene().addPixmap(10.090598, 44.857893, pix)
+        pixmapItem.setOffset(-12, -12)
+        pointItemPixmapOrigin = view.scene().addEllipse(10.090598, 44.857893, 3.0)
+        pointItemPixmapOrigin.setBrush(Qt.Qt.black)
 
 
 if __name__ == '__main__':

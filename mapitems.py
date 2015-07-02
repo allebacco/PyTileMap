@@ -1,7 +1,7 @@
 import numpy as np
 
 from PyQt4.QtCore import QLineF
-from PyQt4.QtGui import QGraphicsEllipseItem, QGraphicsLineItem, QGraphicsPathItem, QPainterPath
+from PyQt4.QtGui import QGraphicsEllipseItem, QGraphicsLineItem, QGraphicsPathItem, QPainterPath, QGraphicsPixmapItem
 
 
 class MapGraphicsEllipseItem(QGraphicsEllipseItem):
@@ -18,7 +18,8 @@ class MapGraphicsEllipseItem(QGraphicsEllipseItem):
     def updatePosition(self, scene):
         pos = scene.posFromLonLat(self._lon, self._lat)
         r = self._radius
-        self.setRect(pos.x()-r, pos.y()-r, r, r)
+        d = r * 2
+        self.setRect(pos.x()-r, pos.y()-r, d, d)
 
     def setLonLat(self, longitude, latitude):
         self._lon = longitude
@@ -83,6 +84,55 @@ class MapGraphicsPolylineItem(QGraphicsPathItem):
 
         self._longitudes = np.array(longitudes)
         self._latitudes = np.array(latitudes)
+        scene = self.scene()
+        if scene is not None:
+            self.updatePosition(scene)
+
+
+class MapGraphicsPixmapItem(QGraphicsPixmapItem):
+    """Item for showing a pixmap in a MapGraphicsScene.
+    """
+
+    def __init__(self, longitude, latitude, pixmap, scene, parent=None):
+        """Constructor.
+
+        Args:
+            longitude(float): Longitude of the origin of the pixmap.
+            latitude(float): Latitude of the center of the pixmap.
+            pixmap(QPixmap): Pixmap.
+            scene(MapGraphicsScene): Scene the item belongs to.
+            parent(QGraphicsItem): Parent item.
+        """
+        QGraphicsEllipseItem.__init__(self, parent=parent, scene=scene)
+
+        self._lon = longitude
+        self._lat = latitude
+        self.setPixmap(pixmap)
+
+        self.updatePosition(scene)
+
+    def updatePosition(self, scene):
+        """Update the origin position of the item.
+
+        Origin coordinates are unchanged.
+
+        Args:
+            scene(MapGraphicsScene): Scene the item belongs to.
+        """
+        pos = scene.posFromLonLat(self._lon, self._lat)
+        self.setPos(pos)
+
+    def setLonLat(self, longitude, latitude):
+        """Update the origin coordinates of the item.
+
+        Origin position will be updated.
+
+        Args:
+            longitude(float): Longitude of the origin of the pixmap.
+            latitude(float): Latitude of the center of the pixmap.
+        """
+        self._lon = longitude
+        self._lat = latitude
         scene = self.scene()
         if scene is not None:
             self.updatePosition(scene)

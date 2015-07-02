@@ -5,7 +5,7 @@ from PyQt4.Qt import Qt, pyqtSlot
 from PyQt4.QtCore import QRect, QRectF, QPointF, QSizeF
 from PyQt4.QtGui import QGraphicsScene, QPixmap
 
-from mapitems import MapGraphicsEllipseItem, MapGraphicsLineItem, MapGraphicsPolylineItem
+from mapitems import MapGraphicsEllipseItem, MapGraphicsLineItem, MapGraphicsPolylineItem, MapGraphicsPixmapItem
 
 PI_div_180 = PI / 180.0
 PI_div_180_inv = 180.0 / PI
@@ -323,4 +323,22 @@ class MapGraphicScene(QGraphicsScene):
 
     def addPolyline(self, longitudes, latitudes):
         item = MapGraphicsPolylineItem(longitudes, latitudes, scene=self)
+        return item
+
+    def addPixmap(self, longitude, latitude, pixmap):
+        """Add a new circle (point) to the graphics scene.
+
+        Args:
+            longitude(float): Longitude of the origin of the pixmap.
+            latitude(float): Latitude of the center of the pixmap.
+            pixmap(QPixmap): Pixmap.
+
+        Returns:
+            MapGraphicsPixmapItem added to the scene.
+
+        Note:
+            Use `MapGraphicsPixmapItem.setOffset(off)` to translate by `off` pixels
+            the pixmap respect the origin coordinates.
+        """
+        item = MapGraphicsPixmapItem(longitude, latitude, pixmap, scene=self)
         return item
