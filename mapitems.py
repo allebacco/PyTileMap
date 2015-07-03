@@ -98,6 +98,8 @@ class MapGraphicsPolylineItem(QGraphicsPathItem):
         self._longitudes = np.array(longitudes, dtype=np.float32)
         self._latitudes = np.array(latitudes, dtype=np.float32)
 
+        self.updatePosition(scene)
+
     def updatePosition(self, scene):
         path = QPainterPath()
 

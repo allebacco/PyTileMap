@@ -2,6 +2,7 @@ from PyQt4 import Qt, QtGui
 
 from mapview import MapGraphicsView
 from maptilesources.maptilesourcehere import MapTileSourceHere
+from maptilesources.maptilesourceosm import MapTileSourceOSM
 
 
 POINTS = [(44.837632, 10.201736),
@@ -64,7 +65,7 @@ class MapZoom(QtGui.QMainWindow):
     def __init__(self):
         QtGui.QMainWindow.__init__(self)
 
-        view = MapGraphicsView(tileSource=MapTileSourceHere())
+        view = MapGraphicsView(tileSource=MapTileSourceOSM())
 
         self.setCentralWidget(view)
 
@@ -81,7 +82,7 @@ class MapZoom(QtGui.QMainWindow):
         lats = list()
         lons = list()
         for p in POINTS:
-            pointItem = view.scene().addCircle(p[1], p[0], 3.0)
+            pointItem = view.scene().addCircle(p[1], p[0], 5.0)
             pointItem.setBrush(Qt.Qt.green)
             pointItem.setPen(QtGui.QPen(Qt.Qt.NoPen))
             pointItem.setToolTip('%f, %f' % (p[1], p[0]))
