@@ -5,7 +5,8 @@ from PyQt4.Qt import Qt, pyqtSlot
 from PyQt4.QtCore import QRect, QRectF, QPointF, QSizeF
 from PyQt4.QtGui import QGraphicsScene, QPixmap
 
-from mapitems import MapGraphicsCircleItem, MapGraphicsLineItem, MapGraphicsPolylineItem
+from mapitems import MapGraphicsCircleItem, MapGraphicsLineItem, MapGraphicsPolylineItem, MapGraphicsPixmapItem
+
 
 PI_div_180 = PI / 180.0
 PI_div_180_inv = 180.0 / PI
@@ -78,6 +79,7 @@ class MapGraphicScene(QGraphicsScene):
         # Request the loading of new tiles (if needed)
         self.requestTiles()
 
+        self.invalidate()
         self.update()
 
     def drawBackground(self, painter, rect):
@@ -137,9 +139,12 @@ class MapGraphicScene(QGraphicsScene):
 
         # Evaluate the position of all the items for the current zoom level.
         for item in self.items():
-            item.updatePosition(self)
-
-        # Update the position of the center
+            # Update position only of root items:
+            # the position of child items is referred to parent items.
+            if item.parentItem() is None:
+                item.updatePosition(self)
+            else:
+                print item.pos()
         self.setCenter(coord.x(), coord.y())
 
     def zoomIn(self):
@@ -351,4 +356,22 @@ class MapGraphicScene(QGraphicsScene):
             MapGraphicsPolylineItem added to the scene.
         """
         item = MapGraphicsPolylineItem(longitudes, latitudes, scene=self)
+        return item
+
+    def addPixmap(self, longitude, latitude, pixmap):
+        """Add a new circle (point) to the graphics scene.
+
+        Args:
+            longitude(float): Longitude of the origin of the pixmap.
+            latitude(float): Latitude of the center of the pixmap.
+            pixmap(QPixmap): Pixmap.
+
+        Returns:
+            MapGraphicsPixmapItem added to the scene.
+
+        Note:
+            Use `MapGraphicsPixmapItem.setOffset(off)` to translate by `off` pixels
+            the pixmap respect the origin coordinates.
+        """
+        item = MapGraphicsPixmapItem(longitude, latitude, pixmap, scene=self)
         return item

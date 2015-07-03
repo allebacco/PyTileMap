@@ -69,8 +69,11 @@ class MapZoom(QtGui.QMainWindow):
         self.setCentralWidget(view)
 
         view.scene().setCenter(10.065990, 44.861041)
+        view.setOptimizationFlag(QtGui.QGraphicsView.DontSavePainterState, True)
+        view.setRenderHint(QtGui.QPainter.Antialiasing, True)
+        view.setRenderHint(QtGui.QPainter.SmoothPixmapTransform, True)
 
-        pointItem = view.scene().addCircle(10.068640, 44.860767, 5.0)
+        pointItem = view.scene().addCircle(10.068640, 44.860767, 3.0)
         pointItem.setBrush(Qt.Qt.black)
         pointItem.setToolTip('10.068640, 44.860767')
         pointItem.setFlag(QtGui.QGraphicsItem.ItemIsSelectable, True)
@@ -78,18 +81,34 @@ class MapZoom(QtGui.QMainWindow):
         lats = list()
         lons = list()
         for p in POINTS:
-            pointItem = view.scene().addCircle(p[1], p[0], 10.0)
-            pointItem.setBrush(Qt.Qt.black)
+            pointItem = view.scene().addCircle(p[1], p[0], 3.0)
+            pointItem.setBrush(Qt.Qt.green)
+            pointItem.setPen(QtGui.QPen(Qt.Qt.NoPen))
             pointItem.setToolTip('%f, %f' % (p[1], p[0]))
             pointItem.setFlag(QtGui.QGraphicsItem.ItemIsSelectable, True)
             lons.append(p[1])
             lats.append(p[0])
 
         lineItem = view.scene().addLine(10.191037, 44.832810, 10.201736, 44.837632)
-        lineItem.setPen(Qt.Qt.blue)
+        lineItem.setPen(QtGui.QPen(QtGui.QBrush(Qt.Qt.blue), 3.0))
 
         polylineItem = view.scene().addPolyline(lons, lats)
-        polylineItem.setPen(Qt.Qt.red)
+        polylineItem.setPen(QtGui.QPen(QtGui.QBrush(Qt.Qt.red), 3.0))
+
+        pix = QtGui.QPixmap(24, 24)
+        pix.fill(Qt.Qt.red)
+        pixmapItem = view.scene().addPixmap(10.090598, 44.857893, pix)
+        pixmapItem.setOffset(-12, -12)
+        pointItemPixmapOrigin = view.scene().addCircle(10.090598, 44.857893, 3.0)
+        pointItemPixmapOrigin.setBrush(Qt.Qt.black)
+
+        pointItemWithChild = view.scene().addCircle(10.083103, 44.858014, 3.0)
+        pointItemWithChild.setBrush(Qt.Qt.blue)
+        pointItemWithChild.setPen(QtGui.QPen(Qt.Qt.NoPen))
+
+        textItem = QtGui.QGraphicsSimpleTextItem('Annotation\nfor blue point', parent=pointItemWithChild)
+        textItem.setBrush(QtGui.QBrush(QtGui.QColor(Qt.Qt.blue)))
+        textItem.setPos(-5, 3)
 
 
 if __name__ == '__main__':
