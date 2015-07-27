@@ -22,7 +22,7 @@ class MapTileSourceHereDemo(MapTileSourceHTTP):
 
 class MapTileSourceHere(MapTileSourceHTTP):
 
-    def __init__(self, tileSize=256, app_id=None, app_code=None, scheme=None, cit=True, parent=None):
+    def __init__(self, tileSize=256, app_id=None, app_code=None, scheme=None, cit=True, tileType=None, parent=None):
         MapTileSourceHTTP.__init__(self, tileSize=tileSize, parent=parent)
         assert tileSize == 256 or tileSize == 512
         self._server = 0
@@ -34,6 +34,7 @@ class MapTileSourceHere(MapTileSourceHTTP):
             self._app_id = app_id
             self._app_code = app_code
 
+        self._tileType = tileType if tileType is not None else 'maptile'
         self._scheme = scheme if scheme is not None else 'normal.day'
         self._cit = '.cit' if cit else ''
 
@@ -42,7 +43,7 @@ class MapTileSourceHere(MapTileSourceHTTP):
         if self._server > 4:
             self._server = 0
 
-        url = "http://%d.base.maps%s.api.here.com/maptile/2.1/maptile/" % (self._server, self._cit)
+        url = "http://%d.base.maps%s.api.here.com/maptile/2.1/%s/" % (self._server, self._cit, self._tileType)
         url += "newest/%s/%d/%d/%d/%d/png8" % (self._scheme, zoom, x, y, self._tileSize)
         url += '?app_id=%s&app_code=%s' % (self._app_id, self._app_code)
         return url
