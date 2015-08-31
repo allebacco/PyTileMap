@@ -1,8 +1,8 @@
 from PyQt4 import Qt, QtGui
 
-from mapview import MapGraphicsView
-from maptilesources.maptilesourcehere import MapTileSourceHere
-from maptilesources.maptilesourceosm import MapTileSourceOSM
+from pytilemap.mapview import MapGraphicsView
+from pytilemap.maptilesources.maptilesourcehere import MapTileSourceHere
+from pytilemap.maptilesources.maptilesourceosm import MapTileSourceOSM
 
 
 POINTS = [(44.837632, 10.201736),
@@ -65,7 +65,7 @@ class MapZoom(QtGui.QMainWindow):
     def __init__(self):
         QtGui.QMainWindow.__init__(self)
 
-        view = MapGraphicsView(tileSource=MapTileSourceOSM())
+        view = MapGraphicsView(tileSource=MapTileSourceHere())
 
         self.setCentralWidget(view)
 
