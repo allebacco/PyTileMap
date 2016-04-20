@@ -2,7 +2,7 @@ import os
 
 from PyQt4.QtGui import QPixmap
 
-from maptilesource import MapTileSource
+from .maptilesource import MapTileSource
 
 
 class MapTileSourceDirectory(MapTileSource):

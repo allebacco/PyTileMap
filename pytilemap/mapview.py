@@ -1,8 +1,8 @@
 from PyQt4.Qt import Qt
 from PyQt4.QtGui import QGraphicsView
 
-from mapscene import MapGraphicScene
-from maptilesources.maptilesourceosm import MapTileSourceOSM
+from .mapscene import MapGraphicScene
+from .maptilesources.maptilesourceosm import MapTileSourceOSM
 
 
 class MapGraphicsView(QGraphicsView):

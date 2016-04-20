@@ -5,7 +5,7 @@ from PyQt4.Qt import Qt, pyqtSlot
 from PyQt4.QtCore import QRect, QRectF, QPointF, QSizeF
 from PyQt4.QtGui import QGraphicsScene, QPixmap
 
-from mapitems import MapGraphicsCircleItem, MapGraphicsLineItem, MapGraphicsPolylineItem, MapGraphicsPixmapItem
+from .mapitems import MapGraphicsCircleItem, MapGraphicsLineItem, MapGraphicsPolylineItem, MapGraphicsPixmapItem
 
 
 PI_div_180 = PI / 180.0
@@ -101,8 +101,8 @@ class MapGraphicScene(QGraphicsScene):
         emptyTilePix = self._emptyTile
         tilePixmaps = self._tilePixmaps
 
-        for x in xrange(numXtiles):
-            for y in xrange(numYtiles):
+        for x in range(numXtiles):
+            for y in range(numYtiles):
                 tp = (x + left, y + top)
                 box = self.tileRect(tp[0], tp[1])
                 # Use default gray image if tile image is missing
@@ -138,13 +138,13 @@ class MapGraphicScene(QGraphicsScene):
         self._tileSource.abortAllRequests()
 
         # Evaluate the position of all the items for the current zoom level.
-        for item in self.items():
+        for item in list(self.items()):
             # Update position only of root items:
             # the position of child items is referred to parent items.
             if item.parentItem() is None:
                 item.updatePosition(self)
-            else:
-                print item.pos()
+            # else:
+            #     print(item.pos())
         self.setCenter(coord.x(), coord.y())
 
     def zoomIn(self):
@@ -195,8 +195,8 @@ class MapGraphicScene(QGraphicsScene):
         zoom = self._zoom
 
         # Request load of new tiles
-        for x in xrange(numXtiles):
-            for y in xrange(numYtiles):
+        for x in range(numXtiles):
+            for y in range(numYtiles):
                 tp = (left + x, top + y)
                 # Request tile only if missing
                 if tp not in tilePixmaps:

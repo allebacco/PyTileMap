@@ -110,7 +110,7 @@ class MapGraphicsPolylineItem(QGraphicsPathItem):
             x, y = scene.posFromLonLat(self._longitudes, self._latitudes)
             dx = x - x[0]
             dy = y - y[0]
-            for i in xrange(1, count):
+            for i in range(1, count):
                 path.lineTo(dx[i], dy[i])
             self.setPos(x[0], y[0])
 
