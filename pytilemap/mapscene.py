@@ -109,7 +109,7 @@ class MapGraphicScene(QGraphicsScene):
                 pix = tilePixmaps.get(tp, emptyTilePix)
                 painter.drawPixmap(box, pix, pixRect)
 
-    def zoomTo(self, zoomlevel):
+    def zoomTo(self, pos, zoomlevel):
         """Zoom to a specific zoom level.
 
         If the level is out of range, the zoom action is ignored.
@@ -125,10 +125,9 @@ class MapGraphicScene(QGraphicsScene):
         if zoomlevel > tileSource.maxZoom() or zoomlevel < tileSource.minZoom():
             return
 
-        # Get the coordinates of the center using the position in pixels
-        # of the center in previous zoom level
-        center = self.sceneRect().center()
-        coord = self.lonLatFromPos(center.x(), center.y())
+        # Get the coordinates of the center using the position in pixels of the mouse
+        pos_corr = self.views()[0].mapToScene(pos)
+        coord = self.lonLatFromPos(pos_corr.x(), pos_corr.y())
 
         # Set the new zoom level
         self._zoom = zoomlevel
@@ -143,19 +142,22 @@ class MapGraphicScene(QGraphicsScene):
             # the position of child items is referred to parent items.
             if item.parentItem() is None:
                 item.updatePosition(self)
-            # else:
-            #     print(item.pos())
-        self.setCenter(coord.x(), coord.y())
 
-    def zoomIn(self):
+        # Re-center map so that the point on which it was zoomed is in the same position
+        self.setCenter(coord.x(), coord.y())
+        pos_corr = self.views()[0].mapToScene(pos)
+        center = self.sceneRect().center()
+        self.translate(center.x() - pos_corr.x(), center.y() - pos_corr.y())
+
+    def zoomIn(self, pos):
         """Increments the zoom level
         """
-        self.zoomTo(self._zoom+1)
+        self.zoomTo(pos, self._zoom + 1)
 
-    def zoomOut(self):
+    def zoomOut(self, pos):
         """Decrements the zoom level
         """
-        self.zoomTo(self._zoom-1)
+        self.zoomTo(pos, self._zoom - 1)
 
     @pyqtSlot(int, int, int, QPixmap)
     def setTilePixmap(self, x, y, zoom, pixmap):

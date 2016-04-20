@@ -76,6 +76,6 @@ class MapGraphicsView(QGraphicsView):
         """
         event.accept()
         if event.delta() > 0:
-            self.scene().zoomIn()
+            self.scene().zoomIn(event.pos())
         elif event.delta() < 0:
-            self.scene().zoomOut()
+            self.scene().zoomOut(event.pos())
