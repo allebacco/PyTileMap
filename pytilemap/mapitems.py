@@ -1,7 +1,8 @@
 import numpy as np
 
 from PyQt4.QtCore import QLineF, QPointF
-from PyQt4.QtGui import QGraphicsEllipseItem, QGraphicsLineItem, QGraphicsPathItem, QPainterPath, QGraphicsPixmapItem
+from PyQt4.QtGui import QGraphicsEllipseItem, QGraphicsLineItem, \
+    QGraphicsPathItem, QPainterPath, QGraphicsPixmapItem, QGraphicsSimpleTextItem
 
 
 class MapGraphicsCircleItem(QGraphicsEllipseItem):
@@ -41,7 +42,7 @@ class MapGraphicsCircleItem(QGraphicsEllipseItem):
         pos = scene.posFromLonLat(self._lon, self._lat)
         r = self._radius
         self.prepareGeometryChange()
-        self.setPos(pos.x()-r, pos.y()-r)
+        self.setPos(pos.x() - r, pos.y() - r)
 
     def setLonLat(self, longitude, latitude):
         """Set the center coordinates of the circle.
@@ -174,3 +175,24 @@ class MapGraphicsPixmapItem(QGraphicsPixmapItem):
         scene = self.scene()
         if scene is not None:
             self.updatePosition(scene)
+
+
+class MapGraphicsTextItem(QGraphicsSimpleTextItem):
+    """Text item for the MapGraphicsScene
+    """
+
+    def __init__(self, longitude, latitude, text, scene, parent=None, min_zoom_visibility=None):
+        pos = scene.posFromLonLat(longitude, latitude)
+        QGraphicsSimpleTextItem.__init__(self, text, scene=scene, parent=parent)
+        self._min_zoom = min_zoom_visibility
+        self._lon, self._lat = longitude, latitude
+        self.setPos(pos)
+        self.updatePosition(scene)
+
+    def updatePosition(self, scene):
+        """Update the origin position of the item."""
+
+        pos = scene.posFromLonLat(self._lon, self._lat)
+        self.setPos(pos)
+        if self._min_zoom is not None:
+            self.setVisible(scene._zoom >= self._min_zoom)
