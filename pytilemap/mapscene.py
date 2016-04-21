@@ -278,7 +278,7 @@ class MapGraphicScene(QGraphicsScene):
         ty = (1.0 - log(tan(lat * PI_div_180) + 1.0 / cos(lat * PI_div_180)) / PI) / 2.0
         tx *= zn
         ty *= zn
-        if isinstance(tx, float):
+        if type(tx) in [float, int]:
             return QPointF(tx, ty)
         return (tx, ty)
 
@@ -302,7 +302,7 @@ class MapGraphicScene(QGraphicsScene):
         lon = tx / zn * 360.0 - 180.0
         n = PI - PI2 * ty / zn
         lat = PI_div_180_inv * arctan(0.5 * (exp(n) - exp(-n)))
-        if isinstance(lon, float):
+        if type(tx) in [float, int]:
             return QPointF(lon, lat)
         return (lon, lat)
 
@@ -380,7 +380,7 @@ class MapGraphicScene(QGraphicsScene):
         return item
 
     def addText(self, longitude, latitude, text):
-        """Add a new circle (point) to the graphics scene.
+        """Add a test item to the graphics scene.
 
         Args:
             longitude(float): Longitude of the origin of the text
