@@ -4,7 +4,7 @@ from PyQt4.QtGui import QDesktopServices, QPixmap
 from PyQt4.QtNetwork import QNetworkRequest, QNetworkDiskCache, QNetworkAccessManager, \
                             QNetworkReply,  QNetworkCacheMetaData
 
-from maptilesource import MapTileSource
+from .maptilesource import MapTileSource
 
 
 class MapTileHTTPCache(QNetworkDiskCache):
@@ -70,7 +70,7 @@ class MapTileHTTPLoader(QObject):
         key = (x, y, zoom)
         url = QUrl(url)
         if url in self._cache:
-            print 'from cache'
+            # print('from cache')
             data = self._cache[url]
             self.tileLoaded.emit(x, y, zoom, data)
         elif key in self._tileInDownload:
@@ -82,11 +82,11 @@ class MapTileHTTPLoader(QObject):
             request.setAttribute(QNetworkRequest.User, key)
             self._tileInDownload[key] = self._manager.get(request)
 
-        print 'In download:', len(self._tileInDownload)
+        # print('In download:', len(self._tileInDownload))
 
     @pyqtSlot(QNetworkReply)
     def handleNetworkData(self, reply):
-        tp = reply.request().attribute(QNetworkRequest.User).toPyObject()
+        tp = reply.request().attribute(QNetworkRequest.User)  # .toPyObject()
         if tp in self._tileInDownload:
             del self._tileInDownload[tp]
 
@@ -107,9 +107,9 @@ class MapTileHTTPLoader(QObject):
 
     @pyqtSlot()
     def abortAllRequests(self):
-        for x, y, zoom in self._tileInDownload.keys():
+        for x, y, zoom in list(self._tileInDownload.keys()):
             self.abortRequest(x, y, zoom)
-        print 'In download:', len(self._tileInDownload)
+        # print('In download:', len(self._tileInDownload))
 
 
 class MapTileSourceHTTP(MapTileSource):

@@ -1,8 +1,8 @@
 from PyQt4.Qt import Qt
 from PyQt4.QtGui import QGraphicsView
 
-from mapscene import MapGraphicScene
-from maptilesources.maptilesourceosm import MapTileSourceOSM
+from .mapscene import MapGraphicScene
+from .maptilesources.maptilesourceosm import MapTileSourceOSM
 
 
 class MapGraphicsView(QGraphicsView):
@@ -76,6 +76,6 @@ class MapGraphicsView(QGraphicsView):
         """
         event.accept()
         if event.delta() > 0:
-            self.scene().zoomIn()
+            self.scene().zoomIn(event.pos())
         elif event.delta() < 0:
-            self.scene().zoomOut()
+            self.scene().zoomOut(event.pos())

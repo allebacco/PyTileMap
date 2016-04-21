@@ -1,4 +1,4 @@
-from maptilesourcehttp import MapTileSourceHTTP
+from .maptilesourcehttp import MapTileSourceHTTP
 
 
 class MapTileSourceHereDemo(MapTileSourceHTTP):

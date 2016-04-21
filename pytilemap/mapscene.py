@@ -5,7 +5,8 @@ from PyQt4.Qt import Qt, pyqtSlot
 from PyQt4.QtCore import QRect, QRectF, QPointF, QSizeF
 from PyQt4.QtGui import QGraphicsScene, QPixmap
 
-from mapitems import MapGraphicsCircleItem, MapGraphicsLineItem, MapGraphicsPolylineItem, MapGraphicsPixmapItem
+from .mapitems import MapGraphicsCircleItem, MapGraphicsLineItem, \
+    MapGraphicsPolylineItem, MapGraphicsPixmapItem, MapGraphicsTextItem
 
 
 PI_div_180 = PI / 180.0
@@ -101,15 +102,15 @@ class MapGraphicScene(QGraphicsScene):
         emptyTilePix = self._emptyTile
         tilePixmaps = self._tilePixmaps
 
-        for x in xrange(numXtiles):
-            for y in xrange(numYtiles):
+        for x in range(numXtiles):
+            for y in range(numYtiles):
                 tp = (x + left, y + top)
                 box = self.tileRect(tp[0], tp[1])
                 # Use default gray image if tile image is missing
                 pix = tilePixmaps.get(tp, emptyTilePix)
                 painter.drawPixmap(box, pix, pixRect)
 
-    def zoomTo(self, zoomlevel):
+    def zoomTo(self, pos, zoomlevel):
         """Zoom to a specific zoom level.
 
         If the level is out of range, the zoom action is ignored.
@@ -125,10 +126,9 @@ class MapGraphicScene(QGraphicsScene):
         if zoomlevel > tileSource.maxZoom() or zoomlevel < tileSource.minZoom():
             return
 
-        # Get the coordinates of the center using the position in pixels
-        # of the center in previous zoom level
-        center = self.sceneRect().center()
-        coord = self.lonLatFromPos(center.x(), center.y())
+        # Get the coordinates of the center using the position in pixels of the mouse
+        pos_corr = self.views()[0].mapToScene(pos)
+        coord = self.lonLatFromPos(pos_corr.x(), pos_corr.y())
 
         # Set the new zoom level
         self._zoom = zoomlevel
@@ -137,25 +137,28 @@ class MapGraphicScene(QGraphicsScene):
         self._tilePixmaps.clear()
         self._tileSource.abortAllRequests()
 
+        # Re-center map so that the point on which it was zoomed is in the same position
+        self.setCenter(coord.x(), coord.y())
+        pos_corr = self.views()[0].mapToScene(pos)
+        center = self.sceneRect().center()
+        self.translate(center.x() - pos_corr.x(), center.y() - pos_corr.y())
+
         # Evaluate the position of all the items for the current zoom level.
-        for item in self.items():
+        for item in list(self.items()):
             # Update position only of root items:
             # the position of child items is referred to parent items.
             if item.parentItem() is None:
                 item.updatePosition(self)
-            else:
-                print item.pos()
-        self.setCenter(coord.x(), coord.y())
 
-    def zoomIn(self):
+    def zoomIn(self, pos):
         """Increments the zoom level
         """
-        self.zoomTo(self._zoom+1)
+        self.zoomTo(pos, self._zoom + 1)
 
-    def zoomOut(self):
+    def zoomOut(self, pos):
         """Decrements the zoom level
         """
-        self.zoomTo(self._zoom-1)
+        self.zoomTo(pos, self._zoom - 1)
 
     @pyqtSlot(int, int, int, QPixmap)
     def setTilePixmap(self, x, y, zoom, pixmap):
@@ -195,8 +198,8 @@ class MapGraphicScene(QGraphicsScene):
         zoom = self._zoom
 
         # Request load of new tiles
-        for x in xrange(numXtiles):
-            for y in xrange(numYtiles):
+        for x in range(numXtiles):
+            for y in range(numYtiles):
                 tp = (left + x, top + y)
                 # Request tile only if missing
                 if tp not in tilePixmaps:
@@ -271,8 +274,8 @@ class MapGraphicScene(QGraphicsScene):
         """
         zn = 1 << self._zoom
         zn = float(zn * self._tileSource.tileSize())
-        tx = (lon+180.0)/360.0
-        ty = (1.0 - log(tan(lat*PI_div_180) + 1.0/cos(lat*PI_div_180)) / PI) / 2.0
+        tx = (lon + 180.0) / 360.0
+        ty = (1.0 - log(tan(lat * PI_div_180) + 1.0 / cos(lat * PI_div_180)) / PI) / 2.0
         tx *= zn
         ty *= zn
         if isinstance(tx, float):
@@ -374,4 +377,17 @@ class MapGraphicScene(QGraphicsScene):
             the pixmap respect the origin coordinates.
         """
         item = MapGraphicsPixmapItem(longitude, latitude, pixmap, scene=self)
+        return item
+
+    def addText(self, longitude, latitude, text):
+        """Add a new circle (point) to the graphics scene.
+
+        Args:
+            longitude(float): Longitude of the origin of the text
+            latitude(float): Latitude of the origin of the text
+
+        Returns:
+            MapGraphicsTextItem added to the scene.
+        """
+        item = MapGraphicsTextItem(longitude, latitude, text, scene=self)
         return item
