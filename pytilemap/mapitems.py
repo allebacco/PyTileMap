@@ -189,6 +189,14 @@ class MapGraphicsTextItem(QGraphicsSimpleTextItem):
         self.setPos(pos)
         self.updatePosition(scene)
 
+    def resetMinZoomVisibility(self):
+        """Delete level of zoom under which the text disappears. """
+        self._min_zoom = None
+
+    def setMinZoomVisibility(self, zoom_level):
+        """Update level of zoom under which the text disappears. """
+        self._min_zoom = zoom_level
+
     def updatePosition(self, scene):
         """Update the origin position of the item."""
 
