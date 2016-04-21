@@ -137,18 +137,18 @@ class MapGraphicScene(QGraphicsScene):
         self._tilePixmaps.clear()
         self._tileSource.abortAllRequests()
 
+        # Re-center map so that the point on which it was zoomed is in the same position
+        self.setCenter(coord.x(), coord.y())
+        pos_corr = self.views()[0].mapToScene(pos)
+        center = self.sceneRect().center()
+        self.translate(center.x() - pos_corr.x(), center.y() - pos_corr.y())
+
         # Evaluate the position of all the items for the current zoom level.
         for item in list(self.items()):
             # Update position only of root items:
             # the position of child items is referred to parent items.
             if item.parentItem() is None:
                 item.updatePosition(self)
-
-        # Re-center map so that the point on which it was zoomed is in the same position
-        self.setCenter(coord.x(), coord.y())
-        pos_corr = self.views()[0].mapToScene(pos)
-        center = self.sceneRect().center()
-        self.translate(center.x() - pos_corr.x(), center.y() - pos_corr.y())
 
     def zoomIn(self, pos):
         """Increments the zoom level
@@ -274,8 +274,8 @@ class MapGraphicScene(QGraphicsScene):
         """
         zn = 1 << self._zoom
         zn = float(zn * self._tileSource.tileSize())
-        tx = (lon+180.0)/360.0
-        ty = (1.0 - log(tan(lat*PI_div_180) + 1.0/cos(lat*PI_div_180)) / PI) / 2.0
+        tx = (lon + 180.0) / 360.0
+        ty = (1.0 - log(tan(lat * PI_div_180) + 1.0 / cos(lat * PI_div_180)) / PI) / 2.0
         tx *= zn
         ty *= zn
         if isinstance(tx, float):
