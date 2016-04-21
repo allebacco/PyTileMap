@@ -5,7 +5,8 @@ from PyQt4.Qt import Qt, pyqtSlot
 from PyQt4.QtCore import QRect, QRectF, QPointF, QSizeF
 from PyQt4.QtGui import QGraphicsScene, QPixmap
 
-from .mapitems import MapGraphicsCircleItem, MapGraphicsLineItem, MapGraphicsPolylineItem, MapGraphicsPixmapItem
+from .mapitems import MapGraphicsCircleItem, MapGraphicsLineItem, \
+    MapGraphicsPolylineItem, MapGraphicsPixmapItem, MapGraphicsTextItem
 
 
 PI_div_180 = PI / 180.0
@@ -376,4 +377,17 @@ class MapGraphicScene(QGraphicsScene):
             the pixmap respect the origin coordinates.
         """
         item = MapGraphicsPixmapItem(longitude, latitude, pixmap, scene=self)
+        return item
+
+    def addText(self, longitude, latitude, text):
+        """Add a new circle (point) to the graphics scene.
+
+        Args:
+            longitude(float): Longitude of the origin of the text
+            latitude(float): Latitude of the origin of the text
+
+        Returns:
+            MapGraphicsTextItem added to the scene.
+        """
+        item = MapGraphicsTextItem(longitude, latitude, text, scene=self)
         return item
