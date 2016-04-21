@@ -150,14 +150,26 @@ class MapGraphicScene(QGraphicsScene):
             if item.parentItem() is None:
                 item.updatePosition(self)
 
-    def zoomIn(self, pos):
+    def zoomIn(self, pos=None):
         """Increments the zoom level
+
+        Args:
+            pos (QPointF): Center position, Latitude and Longitude. Default None for the
+                           current center position.
         """
+        if pos is None:
+            pos = self.sceneRect().center()
         self.zoomTo(pos, self._zoom + 1)
 
-    def zoomOut(self, pos):
+    def zoomOut(self, pos=None):
         """Decrements the zoom level
+
+        Args:
+            pos (QPointF): Center position, Latitude and Longitude. Default None for the
+                           current center position.
         """
+        if pos is None:
+            pos = self.sceneRect().center()
         self.zoomTo(pos, self._zoom - 1)
 
     @pyqtSlot(int, int, int, QPixmap)
@@ -177,7 +189,7 @@ class MapGraphicScene(QGraphicsScene):
     def requestTiles(self):
         """Request the loading of tiles.
 
-        Remove from the cache the farthest tiles.
+        Remove from the cache the oldest tiles.
         Check the loaded tiles and request the requests only
         the missing tiles.
         """
