@@ -7,6 +7,12 @@ from PyQt4.QtGui import QGraphicsEllipseItem, QGraphicsLineItem, \
 
 
 class MapItem(object):
+    """Base class for each item in the MapGraphicScene
+
+    The default implementation connects the MapGraphicScene.sigZoomChanged() signal
+    to the MapItem.setZoom() slot. This slot call the MapItem.updatePosition() method
+    for updating the position of the item in reaction to a change in the zoom level.
+    """
 
     def __init__(self):
         if not isinstance(self, QGraphicsItem):
@@ -14,16 +20,23 @@ class MapItem(object):
 
     def itemChange(self, change, value):
         if change == self.ItemSceneChange:
-            print('ItemSceneChange', value)
+            # Disconnect the old scene, if any
             oldScene = self.scene()
             if oldScene is not None:
                 oldScene.sigZoomChanged.disconnect(self.setZoom)
+            # Connect the new scene, if any
             if value is not None:
                 value.sigZoomChanged.connect(self.setZoom)
+                # Setup the new position of the item
                 self.updatePosition(value)
         return value
 
     def setZoom(self, zoom):
+        '''Set a new zoom level.
+
+        Args:
+            zoom (int): The new zoom level.
+        '''
         scene = self.scene()
         self.updatePosition(scene)
 
