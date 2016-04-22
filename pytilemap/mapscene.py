@@ -1,7 +1,7 @@
 from numpy import log, tan, cos, arctan, exp, floor
 from numpy import pi as PI
 
-from PyQt4.Qt import Qt, pyqtSlot
+from PyQt4.Qt import Qt, pyqtSlot, pyqtSignal
 from PyQt4.QtCore import QRect, QRectF, QPointF, QSizeF
 from PyQt4.QtGui import QGraphicsScene, QPixmap
 
@@ -17,6 +17,8 @@ PI2 = PI * 2.0
 class MapGraphicScene(QGraphicsScene):
     """Graphics scene for showing a slippy map.
     """
+
+    sigZoomChanged = pyqtSignal(int)
 
     def __init__(self, tileSource, parent=None):
         """Constructor.
@@ -143,12 +145,7 @@ class MapGraphicScene(QGraphicsScene):
         center = self.sceneRect().center()
         self.translate(center.x() - pos_corr.x(), center.y() - pos_corr.y())
 
-        # Evaluate the position of all the items for the current zoom level.
-        for item in list(self.items()):
-            # Update position only of root items:
-            # the position of child items is referred to parent items.
-            if item.parentItem() is None:
-                item.updatePosition(self)
+        self.sigZoomChanged.emit(zoomlevel)
 
     def zoomIn(self, pos=None):
         """Increments the zoom level
@@ -342,7 +339,8 @@ class MapGraphicScene(QGraphicsScene):
         Returns:
             MapGraphicsCircleItem added to the scene.
         """
-        item = MapGraphicsCircleItem(longitude, latitude, radius, scene=self)
+        item = MapGraphicsCircleItem(longitude, latitude, radius)
+        self.addItem(item)
         return item
 
     def addLine(self, lon0, lat0, lon1, lat1):
@@ -357,7 +355,8 @@ class MapGraphicScene(QGraphicsScene):
         Returns:
             MapGraphicsLineItem added to the scene.
         """
-        item = MapGraphicsLineItem(lon0, lat0, lon1, lat1, scene=self)
+        item = MapGraphicsLineItem(lon0, lat0, lon1, lat1)
+        self.addItem(item)
         return item
 
     def addPolyline(self, longitudes, latitudes):
@@ -370,7 +369,8 @@ class MapGraphicScene(QGraphicsScene):
         Returns:
             MapGraphicsPolylineItem added to the scene.
         """
-        item = MapGraphicsPolylineItem(longitudes, latitudes, scene=self)
+        item = MapGraphicsPolylineItem(longitudes, latitudes)
+        self.addItem(item)
         return item
 
     def addPixmap(self, longitude, latitude, pixmap):
@@ -388,7 +388,8 @@ class MapGraphicScene(QGraphicsScene):
             Use `MapGraphicsPixmapItem.setOffset(off)` to translate by `off` pixels
             the pixmap respect the origin coordinates.
         """
-        item = MapGraphicsPixmapItem(longitude, latitude, pixmap, scene=self)
+        item = MapGraphicsPixmapItem(longitude, latitude, pixmap)
+        self.addItem(item)
         return item
 
     def addText(self, longitude, latitude, text):
@@ -401,5 +402,6 @@ class MapGraphicScene(QGraphicsScene):
         Returns:
             MapGraphicsTextItem added to the scene.
         """
-        item = MapGraphicsTextItem(longitude, latitude, text, scene=self)
+        item = MapGraphicsTextItem(longitude, latitude, text)
+        self.addItem(item)
         return item
