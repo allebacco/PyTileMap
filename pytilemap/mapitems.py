@@ -14,6 +14,8 @@ class MapItem(object):
     for updating the position of the item in reaction to a change in the zoom level.
     """
 
+    QtParentClass = None
+
     def __init__(self):
         if not isinstance(self, QGraphicsItem):
             raise RuntimeError('MapItem must be an instance of QGraphicsItem')
@@ -29,7 +31,7 @@ class MapItem(object):
                 value.sigZoomChanged.connect(self.setZoom)
                 # Setup the new position of the item
                 self.updatePosition(value)
-        return value
+        return self.QtParentClass.itemChange(self, change, value)
 
     def setZoom(self, zoom):
         '''Set a new zoom level.
@@ -47,6 +49,8 @@ class MapItem(object):
 class MapGraphicsCircleItem(QGraphicsEllipseItem, MapItem):
     """Circle item for the MapGraphicsScene
     """
+
+    QtParentClass = QGraphicsEllipseItem
 
     def __init__(self, longitude, latitude, radius, parent=None):
         """Constructor.
@@ -98,6 +102,8 @@ class MapGraphicsCircleItem(QGraphicsEllipseItem, MapItem):
 
 class MapGraphicsLineItem(QGraphicsLineItem, MapItem):
 
+    QtParentClass = QGraphicsLineItem
+
     def __init__(self, lon0, lat0, lon1, lat1, parent=None):
         QGraphicsLineItem.__init__(self, parent=parent)
         MapItem.__init__(self)
@@ -127,6 +133,8 @@ class MapGraphicsLineItem(QGraphicsLineItem, MapItem):
 
 
 class MapGraphicsPolylineItem(QGraphicsPathItem, MapItem):
+
+    QtParentClass = QGraphicsPathItem
 
     def __init__(self, longitudes, latitudes, parent=None):
         QGraphicsPathItem.__init__(self, parent=parent)
@@ -166,6 +174,8 @@ class MapGraphicsPolylineItem(QGraphicsPathItem, MapItem):
 class MapGraphicsPixmapItem(QGraphicsPixmapItem, MapItem):
     """Item for showing a pixmap in a MapGraphicsScene.
     """
+
+    QtParentClass = QGraphicsPixmapItem
 
     def __init__(self, longitude, latitude, pixmap, parent=None):
         """Constructor.
@@ -215,6 +225,8 @@ class MapGraphicsPixmapItem(QGraphicsPixmapItem, MapItem):
 class MapGraphicsTextItem(QGraphicsSimpleTextItem, MapItem):
     """Text item for the MapGraphicsScene
     """
+
+    QtParentClass = QGraphicsSimpleTextItem
 
     def __init__(self, longitude, latitude, text, parent=None, min_zoom_visibility=None):
         QGraphicsSimpleTextItem.__init__(self, text, parent=parent)

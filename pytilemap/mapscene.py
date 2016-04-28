@@ -7,6 +7,7 @@ from PyQt4.QtGui import QGraphicsScene, QPixmap
 
 from .mapitems import MapGraphicsCircleItem, MapGraphicsLineItem, \
     MapGraphicsPolylineItem, MapGraphicsPixmapItem, MapGraphicsTextItem
+from .maplegenditem import MapLegendItem
 
 
 PI_div_180 = PI / 180.0
@@ -46,6 +47,10 @@ class MapGraphicScene(QGraphicsScene):
 
         self.setSceneRect(0.0, 0.0, 400, 300)
         self.sceneRectChanged.connect(self.onSceneRectChanged)
+
+    @pyqtSlot()
+    def close(self):
+        self._tileSource.close()
 
     @pyqtSlot(QRectF)
     def onSceneRectChanged(self, rect):
@@ -405,3 +410,8 @@ class MapGraphicScene(QGraphicsScene):
         item = MapGraphicsTextItem(longitude, latitude, text)
         self.addItem(item)
         return item
+
+    def addLegend(self, pos=QPointF(10.0, 10.0)):
+        legend = MapLegendItem(pos=pos)
+        self.addItem(legend)
+        return legend

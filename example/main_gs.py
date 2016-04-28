@@ -111,6 +111,13 @@ class MapZoom(QtGui.QMainWindow):
         textItem.setBrush(QtGui.QBrush(QtGui.QColor(Qt.Qt.blue)))
         textItem.setPos(-5, 3)
 
+        legendItem = view.scene().addLegend()
+        legendItem.addPoint('Point 1', color=QtGui.QColor('#FF0000'))
+        legendItem.addPoint('Rect 2', color=QtGui.QColor('#00FF00'))
+        legendItem.addPoint('Circle 3', color=QtGui.QColor('#0000FF'))
+        legendItem.addPoint('Sphere 4', color=QtGui.QColor('#00FFFF'))
+        legendItem.addPoint('Polygon 5', color=QtGui.QColor('#FF00FF'))
+
 
 if __name__ == '__main__':
     app = QtGui.QApplication([])

@@ -2,7 +2,7 @@ from PyQt4.Qt import Qt, pyqtSignal, pyqtSlot
 from PyQt4.QtCore import QObject, QByteArray, QUrl, QThread, QDateTime
 from PyQt4.QtGui import QDesktopServices, QPixmap
 from PyQt4.QtNetwork import QNetworkRequest, QNetworkDiskCache, QNetworkAccessManager, \
-                            QNetworkReply,  QNetworkCacheMetaData
+    QNetworkReply, QNetworkCacheMetaData
 
 from .maptilesource import MapTileSource
 
@@ -130,6 +130,11 @@ class MapTileSourceHTTP(MapTileSource):
         self._loader.tileLoaded.connect(self.handleTileDataLoaded, Qt.QueuedConnection)
 
         self._thread.start()
+        #self.destroyed.connect(self.close)
+
+    @pyqtSlot()
+    def close(self):
+        self._thread.terminate()
 
     def url(self, x, y, zoom):
         raise NotImplementedError()

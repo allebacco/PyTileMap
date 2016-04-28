@@ -1,4 +1,4 @@
-from PyQt4.Qt import Qt
+from PyQt4.Qt import Qt, pyqtSlot
 from PyQt4.QtGui import QGraphicsView
 
 from .mapscene import MapGraphicScene
@@ -22,6 +22,11 @@ class MapGraphicsView(QGraphicsView):
         scene = MapGraphicScene(tileSource)
         self.setScene(scene)
         self._lastMousePos = None
+
+    @pyqtSlot()
+    def close(self):
+        self.scene().close()
+        QGraphicsView.close(self)
 
     def resizeEvent(self, event):
         """Resize the widget. Reimplemented from `QGraphicsView`.
