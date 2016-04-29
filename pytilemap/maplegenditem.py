@@ -74,7 +74,20 @@ class MapLegendItem(QGraphicsObject, MapItem):
         if pen is None and color is None:
             raise ValueError("`pen` and `color` can't be both None")
 
-        shape = QGraphicsEllipseItem(size/2.0, size/2.0, size, size)
+        shape = QGraphicsEllipseItem(size / 2.0, size / 2.0, size, size)
+        if color is not None:
+            shape.setBrush(QBrush(color))
+        if pen is not None:
+            shape.setPen(QPen(pen))
+
+        entry = MapLegendEntryItem(shape, text)
+        self.addEntry(entry)
+
+    def addRect(self, text, pen=None, color=None, size=20.0):
+        if pen is None and color is None:
+            raise ValueError("`pen` and `color` can't be both None")
+
+        shape = QGraphicsRectItem(size / 2.0, size / 2.0, size, size)
         if color is not None:
             shape.setBrush(QBrush(color))
         if pen is not None:
