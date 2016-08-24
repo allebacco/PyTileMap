@@ -1,4 +1,4 @@
-from PyQt4.Qt import pyqtSignal
+from PyQt4.Qt import pyqtSignal, pyqtSlot
 from PyQt4.QtCore import QObject
 from PyQt4.QtGui import QPixmap
 
@@ -29,5 +29,10 @@ class MapTileSource(QObject):
     def requestTile(self, x, y, zoom):
         raise NotImplementedError()
 
+    @pyqtSlot()
     def abortAllRequests(self):
+        pass
+
+    @pyqtSlot()
+    def close(self):
         pass

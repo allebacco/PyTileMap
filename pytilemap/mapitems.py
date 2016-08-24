@@ -1,15 +1,58 @@
 import numpy as np
 
-from PyQt4.QtCore import QLineF, QPointF
+from PyQt4.QtCore import QLineF, QPointF, QRectF
 from PyQt4.QtGui import QGraphicsEllipseItem, QGraphicsLineItem, \
-    QGraphicsPathItem, QPainterPath, QGraphicsPixmapItem, QGraphicsSimpleTextItem
+    QGraphicsPathItem, QPainterPath, QGraphicsPixmapItem, \
+    QGraphicsSimpleTextItem, QGraphicsItem, QGraphicsRectItem
 
 
-class MapGraphicsCircleItem(QGraphicsEllipseItem):
+class MapItem(object):
+    """Base class for each item in the MapGraphicScene
+
+    The default implementation connects the MapGraphicScene.sigZoomChanged() signal
+    to the MapItem.setZoom() slot. This slot call the MapItem.updatePosition() method
+    for updating the position of the item in reaction to a change in the zoom level.
+    """
+
+    QtParentClass = None
+
+    def __init__(self):
+        if not isinstance(self, QGraphicsItem):
+            raise RuntimeError('MapItem must be an instance of QGraphicsItem')
+
+    def itemChange(self, change, value):
+        if change == self.ItemSceneChange:
+            # Disconnect the old scene, if any
+            oldScene = self.scene()
+            if oldScene is not None:
+                oldScene.sigZoomChanged.disconnect(self.setZoom)
+            # Connect the new scene, if any
+            if value is not None:
+                value.sigZoomChanged.connect(self.setZoom)
+                # Setup the new position of the item
+                self.updatePosition(value)
+        return self.QtParentClass.itemChange(self, change, value)
+
+    def setZoom(self, zoom):
+        '''Set a new zoom level.
+
+        Args:
+            zoom (int): The new zoom level.
+        '''
+        scene = self.scene()
+        self.updatePosition(scene)
+
+    def updatePosition(self, scene):
+        raise NotImplementedError()
+
+
+class MapGraphicsCircleItem(QGraphicsEllipseItem, MapItem):
     """Circle item for the MapGraphicsScene
     """
 
-    def __init__(self, longitude, latitude, radius, scene, parent=None):
+    QtParentClass = QGraphicsEllipseItem
+
+    def __init__(self, longitude, latitude, radius, parent=None):
         """Constructor.
 
         Args:
@@ -22,7 +65,8 @@ class MapGraphicsCircleItem(QGraphicsEllipseItem):
         Note:
             The management of the parent item is work in progress.
         """
-        QGraphicsEllipseItem.__init__(self, parent=parent, scene=scene)
+        QGraphicsEllipseItem.__init__(self, parent=parent)
+        MapItem.__init__(self)
 
         self._lon = longitude
         self._lat = latitude
@@ -30,8 +74,6 @@ class MapGraphicsCircleItem(QGraphicsEllipseItem):
 
         d = self._radius * 2
         self.setRect(0, 0, d, d)
-
-        self.updatePosition(scene)
 
     def updatePosition(self, scene):
         """Update the position of the circle.
@@ -58,17 +100,69 @@ class MapGraphicsCircleItem(QGraphicsEllipseItem):
             self.updatePosition(scene)
 
 
-class MapGraphicsLineItem(QGraphicsLineItem):
+class MapGraphicsRectItem(QGraphicsRectItem, MapItem):
+    """Circle item for the MapGraphicsScene
+    """
 
-    def __init__(self, lon0, lat0, lon1, lat1, scene, parent=None):
-        QGraphicsLineItem.__init__(self, parent=parent, scene=scene)
+    QtParentClass = QGraphicsRectItem
+
+    def __init__(self, lon0, lat0, lon1, lat1, parent=None):
+        """Constructor.
+
+        Args:
+            lon0(float): Longitude of the top left point.
+            lat0(float): Latitude of the top left point.
+            lon1(float): Longitude of the bottom right point.
+            lat1(float): Latitude of the bottom right point.
+            parent(QGraphicsItem): Parent item, default None.
+
+        Note:
+            The management of the parent item is work in progress.
+        """
+        QGraphicsRectItem.__init__(self, parent=parent)
+        MapItem.__init__(self)
 
         self._lon0 = lon0
         self._lat0 = lat0
         self._lon1 = lon1
         self._lat1 = lat1
 
-        self.updatePosition(scene)
+    def updatePosition(self, scene):
+        """Update the position of the circle.
+
+        Args:
+            scene(MapGraphicsScene): Scene to which the circle belongs.
+        """
+        pos0 = scene.posFromLonLat(self._lon0, self._lat0)
+        pos1 = scene.posFromLonLat(self._lon1, self._lat1)
+
+        self.prepareGeometryChange()
+        rect = QRectF(pos0, pos1).normalized()
+        self.setRect(rect)
+        self.setPos(QPointF(0.0, 0.0))
+
+    def setLonLat(self, lon0, lat0, lon1, lat1):
+        self._lon0 = lon0
+        self._lat0 = lat0
+        self._lon1 = lon1
+        self._lat1 = lat1
+        scene = self.scene()
+        if scene is not None:
+            self.updatePosition(self.scene())
+
+
+class MapGraphicsLineItem(QGraphicsLineItem, MapItem):
+
+    QtParentClass = QGraphicsLineItem
+
+    def __init__(self, lon0, lat0, lon1, lat1, parent=None):
+        QGraphicsLineItem.__init__(self, parent=parent)
+        MapItem.__init__(self)
+
+        self._lon0 = lon0
+        self._lat0 = lat0
+        self._lon1 = lon1
+        self._lat1 = lat1
 
     def updatePosition(self, scene):
         pos0 = scene.posFromLonLat(self._lon0, self._lat0)
@@ -89,17 +183,18 @@ class MapGraphicsLineItem(QGraphicsLineItem):
             self.updatePosition(self.scene())
 
 
-class MapGraphicsPolylineItem(QGraphicsPathItem):
+class MapGraphicsPolylineItem(QGraphicsPathItem, MapItem):
 
-    def __init__(self, longitudes, latitudes, scene, parent=None):
-        QGraphicsPathItem.__init__(self, parent=parent, scene=scene)
+    QtParentClass = QGraphicsPathItem
+
+    def __init__(self, longitudes, latitudes, parent=None):
+        QGraphicsPathItem.__init__(self, parent=parent)
+        MapItem.__init__(self)
 
         assert len(longitudes) == len(latitudes)
 
         self._longitudes = np.array(longitudes, dtype=np.float32)
         self._latitudes = np.array(latitudes, dtype=np.float32)
-
-        self.updatePosition(scene)
 
     def updatePosition(self, scene):
         path = QPainterPath()
@@ -127,11 +222,13 @@ class MapGraphicsPolylineItem(QGraphicsPathItem):
             self.updatePosition(scene)
 
 
-class MapGraphicsPixmapItem(QGraphicsPixmapItem):
+class MapGraphicsPixmapItem(QGraphicsPixmapItem, MapItem):
     """Item for showing a pixmap in a MapGraphicsScene.
     """
 
-    def __init__(self, longitude, latitude, pixmap, scene, parent=None):
+    QtParentClass = QGraphicsPixmapItem
+
+    def __init__(self, longitude, latitude, pixmap, parent=None):
         """Constructor.
 
         Args:
@@ -141,13 +238,12 @@ class MapGraphicsPixmapItem(QGraphicsPixmapItem):
             scene(MapGraphicsScene): Scene the item belongs to.
             parent(QGraphicsItem): Parent item.
         """
-        QGraphicsEllipseItem.__init__(self, parent=parent, scene=scene)
+        QGraphicsEllipseItem.__init__(self, parent=parent)
+        MapItem.__init__(self)
 
         self._lon = longitude
         self._lat = latitude
         self.setPixmap(pixmap)
-
-        self.updatePosition(scene)
 
     def updatePosition(self, scene):
         """Update the origin position of the item.
@@ -177,17 +273,17 @@ class MapGraphicsPixmapItem(QGraphicsPixmapItem):
             self.updatePosition(scene)
 
 
-class MapGraphicsTextItem(QGraphicsSimpleTextItem):
+class MapGraphicsTextItem(QGraphicsSimpleTextItem, MapItem):
     """Text item for the MapGraphicsScene
     """
 
-    def __init__(self, longitude, latitude, text, scene, parent=None, min_zoom_visibility=None):
-        pos = scene.posFromLonLat(longitude, latitude)
-        QGraphicsSimpleTextItem.__init__(self, text, scene=scene, parent=parent)
+    QtParentClass = QGraphicsSimpleTextItem
+
+    def __init__(self, longitude, latitude, text, parent=None, min_zoom_visibility=None):
+        QGraphicsSimpleTextItem.__init__(self, text, parent=parent)
+        MapItem.__init__(self)
         self._min_zoom = min_zoom_visibility
         self._lon, self._lat = longitude, latitude
-        self.setPos(pos)
-        self.updatePosition(scene)
 
     def resetMinZoomVisibility(self):
         """Delete level of zoom under which the text disappears. """

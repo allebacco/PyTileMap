@@ -1,8 +1,6 @@
 from PyQt4 import Qt, QtGui
 
-from pytilemap.mapview import MapGraphicsView
-from pytilemap.maptilesources.maptilesourcehere import MapTileSourceHere
-from pytilemap.maptilesources.maptilesourceosm import MapTileSourceOSM
+from pytilemap import MapGraphicsView, MapTileSourceHere, MapTileSourceOSM
 
 
 POINTS = [(44.837632, 10.201736),
@@ -110,6 +108,13 @@ class MapZoom(QtGui.QMainWindow):
         textItem = QtGui.QGraphicsSimpleTextItem('Annotation\nfor blue point', parent=pointItemWithChild)
         textItem.setBrush(QtGui.QBrush(QtGui.QColor(Qt.Qt.blue)))
         textItem.setPos(-5, 3)
+
+        legendItem = view.scene().addLegend()
+        legendItem.addPoint('Point 1', color=QtGui.QColor('#FF0000'))
+        legendItem.addRect('Rect 2', color=QtGui.QColor('#00FF00'))
+        legendItem.addPoint('Circle 3', color=QtGui.QColor('#0000FF'))
+        legendItem.addRect('Sphere 4', color=QtGui.QColor('#00FFFF'))
+        legendItem.addPoint('Polygon 5', color=QtGui.QColor('#FF00FF'))
 
 
 if __name__ == '__main__':
