@@ -1,4 +1,4 @@
-from .mapscene import MapGraphicScene
+from .mapscene import MapGraphicsScene
 from .mapview import MapGraphicsView
 from .mapitems import MapGraphicsCircleItem, MapGraphicsLineItem, \
     MapGraphicsPolylineItem, MapGraphicsPixmapItem, MapGraphicsTextItem, \
@@ -9,7 +9,7 @@ from .maptilesources import MapTileSource, MapTileSourceHere, MapTileSourceHereD
 
 
 __all__ = [
-    'MapGraphicScene',
+    'MapGraphicsScene',
     'MapGraphicsView',
     'MapGraphicsCircleItem',
     'MapGraphicsLineItem',

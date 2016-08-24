@@ -16,7 +16,7 @@ PI_div_180_inv = 180.0 / PI
 PI2 = PI * 2.0
 
 
-class MapGraphicScene(QGraphicsScene):
+class MapGraphicsScene(QGraphicsScene):
     """Graphics scene for showing a slippy map.
     """
 
