@@ -1,8 +1,6 @@
 from PyQt4 import Qt, QtGui
 
-from pytilemap.mapview import MapGraphicsView
-from pytilemap.maptilesources.maptilesourcehere import MapTileSourceHere
-from pytilemap.maptilesources.maptilesourceosm import MapTileSourceOSM
+from pytilemap import MapGraphicsView, MapTileSourceHere, MapTileSourceOSM
 
 
 POINTS = [(44.837632, 10.201736),

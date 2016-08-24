@@ -1,9 +1,9 @@
 import numpy as np
 
-from PyQt4.QtCore import QLineF, QPointF
+from PyQt4.QtCore import QLineF, QPointF, QRectF
 from PyQt4.QtGui import QGraphicsEllipseItem, QGraphicsLineItem, \
     QGraphicsPathItem, QPainterPath, QGraphicsPixmapItem, \
-    QGraphicsSimpleTextItem, QGraphicsItem
+    QGraphicsSimpleTextItem, QGraphicsItem, QGraphicsRectItem
 
 
 class MapItem(object):
@@ -98,6 +98,57 @@ class MapGraphicsCircleItem(QGraphicsEllipseItem, MapItem):
         scene = self.scene()
         if scene is not None:
             self.updatePosition(scene)
+
+
+class MapGraphicsRectItem(QGraphicsRectItem, MapItem):
+    """Circle item for the MapGraphicsScene
+    """
+
+    QtParentClass = QGraphicsRectItem
+
+    def __init__(self, lon0, lat0, lon1, lat1, parent=None):
+        """Constructor.
+
+        Args:
+            lon0(float): Longitude of the top left point.
+            lat0(float): Latitude of the top left point.
+            lon1(float): Longitude of the bottom right point.
+            lat1(float): Latitude of the bottom right point.
+            parent(QGraphicsItem): Parent item, default None.
+
+        Note:
+            The management of the parent item is work in progress.
+        """
+        QGraphicsRectItem.__init__(self, parent=parent)
+        MapItem.__init__(self)
+
+        self._lon0 = lon0
+        self._lat0 = lat0
+        self._lon1 = lon1
+        self._lat1 = lat1
+
+    def updatePosition(self, scene):
+        """Update the position of the circle.
+
+        Args:
+            scene(MapGraphicsScene): Scene to which the circle belongs.
+        """
+        pos0 = scene.posFromLonLat(self._lon0, self._lat0)
+        pos1 = scene.posFromLonLat(self._lon1, self._lat1)
+
+        self.prepareGeometryChange()
+        rect = QRectF(pos0, pos1).normalized()
+        self.setRect(rect)
+        self.setPos(QPointF(0.0, 0.0))
+
+    def setLonLat(self, lon0, lat0, lon1, lat1):
+        self._lon0 = lon0
+        self._lat0 = lat0
+        self._lon1 = lon1
+        self._lat1 = lat1
+        scene = self.scene()
+        if scene is not None:
+            self.updatePosition(self.scene())
 
 
 class MapGraphicsLineItem(QGraphicsLineItem, MapItem):

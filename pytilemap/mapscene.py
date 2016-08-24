@@ -6,7 +6,8 @@ from PyQt4.QtCore import QRect, QRectF, QPointF, QSizeF
 from PyQt4.QtGui import QGraphicsScene, QPixmap
 
 from .mapitems import MapGraphicsCircleItem, MapGraphicsLineItem, \
-    MapGraphicsPolylineItem, MapGraphicsPixmapItem, MapGraphicsTextItem
+    MapGraphicsPolylineItem, MapGraphicsPixmapItem, MapGraphicsTextItem, \
+    MapGraphicsRectItem
 from .maplegenditem import MapLegendItem
 
 
@@ -355,12 +356,28 @@ class MapGraphicScene(QGraphicsScene):
             lon0(float): Longitude of the start point.
             lat0(float): Latitude of the start point.
             lon1(float): Longitude of the end point.
-            lat2(float): Latitude of the end point.
+            lat1(float): Latitude of the end point.
 
         Returns:
             MapGraphicsLineItem added to the scene.
         """
         item = MapGraphicsLineItem(lon0, lat0, lon1, lat1)
+        self.addItem(item)
+        return item
+
+    def addRect(self, lon0, lat0, lon1, lat1):
+        """Add a newline) to the graphics scene.
+
+        Args:
+            lon0(float): Longitude of the top left point.
+            lat0(float): Latitude of the top left point.
+            lon1(float): Longitude of the bottom right point.
+            lat1(float): Latitude of the bottom right point.
+
+        Returns:
+            MapGraphicsLineItem added to the scene.
+        """
+        item = MapGraphicsRectItem(lon0, lat0, lon1, lat1)
         self.addItem(item)
         return item
 

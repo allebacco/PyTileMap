@@ -52,7 +52,7 @@ class MapTileHTTPLoader(QObject):
 
     tileLoaded = pyqtSignal(int, int, int, QByteArray)
 
-    def __init__(self, cacheSize=1024*1024*100, userAgent='(PyQt) TileMap 1.2', parent=None):
+    def __init__(self, cacheSize=1024 * 1024 * 100, userAgent='(PyQt) TileMap 1.2', parent=None):
         QObject.__init__(self, parent=parent)
         self._manager = None
         self._cache = None
@@ -117,7 +117,7 @@ class MapTileSourceHTTP(MapTileSource):
     requestTileLoading = pyqtSignal(int, int, int, str)
     abortTileLoading = pyqtSignal()
 
-    def __init__(self, cacheSize=1024*1024*100, userAgent='(PyQt) TileMap 1.2',
+    def __init__(self, cacheSize=1024 * 1024 * 100, userAgent='(PyQt) TileMap 1.2',
                  tileSize=256, minZoom=2, maxZoom=18, parent=None):
         MapTileSource.__init__(self, tileSize=tileSize, minZoom=minZoom, maxZoom=maxZoom, parent=parent)
 
@@ -130,7 +130,7 @@ class MapTileSourceHTTP(MapTileSource):
         self._loader.tileLoaded.connect(self.handleTileDataLoaded, Qt.QueuedConnection)
 
         self._thread.start()
-        #self.destroyed.connect(self.close)
+        # self.destroyed.connect(self.close)
 
     @pyqtSlot()
     def close(self):
