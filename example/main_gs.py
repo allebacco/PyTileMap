@@ -57,6 +57,12 @@ POINTS = [(44.837632, 10.201736),
           (44.832954, 10.191164),
           (44.832810, 10.191037)]
 
+POINTS_2 = [(44.868333, 10.053170), (44.867962, 10.053621), (44.867141, 10.054216),
+            (44.866913, 10.054104), (44.867016, 10.053782), (44.866993, 10.052650)]
+POINTS_2_SIZES = [1, 2, 3, 4, 5]
+POINTS_2_COLORS = [(255, 0, 0), (0, 255, 0), (0, 0, 255), (255, 255, 0), (0, 0, 0)]
+
+
 
 class MapZoom(QtGui.QMainWindow):
 
@@ -108,6 +114,15 @@ class MapZoom(QtGui.QMainWindow):
         textItem = QtGui.QGraphicsSimpleTextItem('Annotation\nfor blue point', parent=pointItemWithChild)
         textItem.setBrush(QtGui.QBrush(QtGui.QColor(Qt.Qt.blue)))
         textItem.setPos(-5, 3)
+
+        lats_2 = list()
+        lons_2 = list()
+        for p in POINTS_2:
+            lons_2.append(p[1])
+            lats_2.append(p[0])
+        linesGroupItem = view.scene().addLinesGroup(lons_2, lats_2)
+        linesGroupItem.setLineColors(POINTS_2_COLORS)
+        linesGroupItem.setLineSizes(POINTS_2_SIZES)
 
         legendItem = view.scene().addLegend()
         legendItem.addPoint('Point 1', color=QtGui.QColor('#FF0000'))

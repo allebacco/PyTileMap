@@ -7,7 +7,7 @@ from PyQt4.QtGui import QGraphicsScene, QPixmap
 
 from .mapitems import MapGraphicsCircleItem, MapGraphicsLineItem, \
     MapGraphicsPolylineItem, MapGraphicsPixmapItem, MapGraphicsTextItem, \
-    MapGraphicsRectItem
+    MapGraphicsRectItem, MapGraphicsLinesGroupItem
 from .maplegenditem import MapLegendItem
 
 
@@ -432,3 +432,8 @@ class MapGraphicsScene(QGraphicsScene):
         legend = MapLegendItem(pos=pos)
         self.addItem(legend)
         return legend
+
+    def addLinesGroup(self, longitudes, latitudes):
+        item = MapGraphicsLinesGroupItem(longitudes, latitudes)
+        self.addItem(item)
+        return item

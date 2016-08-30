@@ -3,7 +3,8 @@ import numpy as np
 from PyQt4.QtCore import QLineF, QPointF, QRectF
 from PyQt4.QtGui import QGraphicsEllipseItem, QGraphicsLineItem, \
     QGraphicsPathItem, QPainterPath, QGraphicsPixmapItem, \
-    QGraphicsSimpleTextItem, QGraphicsItem, QGraphicsRectItem
+    QGraphicsSimpleTextItem, QGraphicsItem, QGraphicsRectItem, \
+    QGraphicsLineItem, QGraphicsItemGroup, QPen, QBrush, QColor
 
 
 class MapItem(object):
@@ -300,3 +301,68 @@ class MapGraphicsTextItem(QGraphicsSimpleTextItem, MapItem):
         self.setPos(pos)
         if self._min_zoom is not None:
             self.setVisible(scene._zoom >= self._min_zoom)
+
+
+class MapGraphicsLinesGroupItem(QGraphicsItem, MapItem):
+
+    QtParentClass = QGraphicsItem
+
+    def __init__(self, longitudes, latitudes, parent=None):
+        QGraphicsItem.__init__(self, parent=parent)
+        MapItem.__init__(self)
+
+        assert len(longitudes) == len(latitudes)
+        assert len(longitudes) >= 2
+
+        self._longitudes = np.array(longitudes, dtype=np.float32)
+        self._latitudes = np.array(latitudes, dtype=np.float32)
+        # Setup internal lines
+        linesGroup = QGraphicsItemGroup(parent=self)
+        self._linesGroup = linesGroup
+        self._lines = [QGraphicsLineItem(parent=linesGroup) for i in range(len(longitudes)-1)]
+    
+    def paint(self, painter, option, widget=None):
+        pass
+
+    def boundingRect(self):
+        return self._linesGroup.boundingRect()
+
+    def setLineColors(self, colors):
+        for i, line in enumerate(self._lines):
+            pen = line.pen()
+            pen.setColor(QColor(*colors[i]))
+            line.setPen(pen)
+
+    def setLineSizes(self, sizes):
+        for i, line in enumerate(self._lines):
+            pen = line.pen()
+            pen.setWidth(sizes[i])
+            line.setPen(pen)
+
+    def updatePosition(self, scene):
+        self.prepareGeometryChange()
+
+        x, y = scene.posFromLonLat(self._longitudes, self._latitudes)
+        lines = self._lines
+        for i in range(0, len(lines)-1):
+            lines[i].setLine(x[i], y[i], x[i+1], y[i+1])
+
+    def setLonLat(self, longitudes, latitudes):
+        assert len(longitudes) == len(latitudes)
+        assert len(longitudes) >= 2
+
+        self._longitudes = np.array(longitudes, dtype=np.float32)
+        self._latitudes = np.array(latitudes, dtype=np.float32)
+
+        old_lines = self._lines
+        for line in old_lines:
+            line.setParentItem(None)
+
+        linesGroup = self._linesGroup
+        self._lines = [QGraphicsLineItem(parent=linesGroup) for i in range(len(longitudes)-1)]
+
+        scene = self.scene()
+        if scene is not None:
+            for line in old_lines:
+                scene.removeItem(line)
+            self.updatePosition(scene)
