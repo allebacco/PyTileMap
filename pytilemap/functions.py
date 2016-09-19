@@ -34,7 +34,7 @@ def makeColorFromInts(ints):
     r = ints[0]
     g = ints[1]
     b = ints[2]
-    a = ints[3] if len(ints) == 3 else 255
+    a = ints[3] if len(ints) == 4 else 255
     return QColor(r, g, b, a)
 
 
@@ -48,7 +48,7 @@ def makeColorFromFloats(floats):
     r = int(floats[0] * 255.0)
     g = int(floats[1] * 255.0)
     b = int(floats[2] * 255.0)
-    a = int(floats[3] * 255.0) if len(floats) == 3 else 255
+    a = int(floats[3] * 255.0) if len(floats) == 4 else 255
     return QColor(r, g, b, a)
 
 
@@ -96,6 +96,6 @@ def makeColor(args):
         makeFunction = makeColorFromNdArray
     elif isinstance(args, list):
         makeFunction = makeColorFromList
-    
+
     return makeFunction(args)
 
