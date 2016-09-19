@@ -39,9 +39,7 @@ def makeColorFromInts(ints):
 
 
 def makeColorFromStr(name):
-    color = QColor()
-    color.setNamedColor(name)
-    return color
+    return QColor(name)
 
 
 def makeColorFromFloats(floats):
@@ -53,15 +51,10 @@ def makeColorFromFloats(floats):
 
 
 def makeColorFromNdArray(array):
-    dtype = array.dtype
-    if dtype in [np.float32, np.float64]:
+    if array.dtype in [np.float32, np.float64]:
         array = np.asarray(array * 255.0, dtype=np.int32)
 
-    colors = list()
-    for row in array:
-        color = makeColorFromInts(row)
-        colors.append(color)
-    return colors
+    return [makeColorFromInts(row) for row in array]
 
 
 def makeColorFromList(colorList):
@@ -70,17 +63,14 @@ def makeColorFromList(colorList):
         return colors
 
     element = colorList[0][0]
-    if isinstance(element, float):
+    if isinstance(element, (float, np.floating)):
         makeFunction = makeColorFromFloats
-    elif isinstance(element, int):
+    elif isinstance(element, (int, np.integer)):
         makeFunction = makeColorFromInts
     else:
         makeFunction = makeColorFromStr
 
-    for row in colorList:
-        color = makeFunction(row)
-        colors.append(color)
-    return colors
+    return [makeFunction(row) for row in colorList]
 
 
 def makeColor(args):
