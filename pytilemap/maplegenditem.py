@@ -1,9 +1,12 @@
+from __future__ import print_function, absolute_import
+
 from PyQt4.Qt import Qt, pyqtSlot
 from PyQt4.QtCore import QRectF, QPointF
 from PyQt4.QtGui import QGraphicsObject, QGraphicsRectItem, QGraphicsItemGroup, \
     QGraphicsSimpleTextItem, QGraphicsEllipseItem, QPen, QBrush, QColor
 
 from .mapitems import MapItem
+from .functions import getQVariantValue
 
 
 class MapLegendEntryItem(QGraphicsItemGroup):
@@ -62,7 +65,8 @@ class MapLegendItem(QGraphicsObject, MapItem):
                 oldScene.sceneRectChanged.disconnect(self.setSceneRect)
             # Connect the new scene, if any
             if value is not None:
-                value.sceneRectChanged.connect(self.setSceneRect)
+                newScene = getQVariantValue(value)
+                newScene.sceneRectChanged.connect(self.setSceneRect)
                 # Setup the new position of the item
                 self.setSceneRect(QRectF())
         return MapItem.itemChange(self, change, value)
