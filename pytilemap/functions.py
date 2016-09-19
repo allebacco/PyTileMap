@@ -1,21 +1,21 @@
 import sys
 
-try:
-    from PyQt4.QtCore import QVariant
-    HAS_QVARIANT = True
-except ImportError:
-    HAS_QVARIANT = False
-
-PYTHON_VERSION = sys.version_info[0]
-
+import sip
 
 __all__ = [
     'getQVariantValue',
     'iterRange',
 ]
 
+try:
+    QVARIANT_API = sip.getapi('QVariant')
+except ValueError:
+    QVARIANT_API = 1
 
-if HAS_QVARIANT:
+PYTHON_VERSION = sys.version_info[0]
+
+
+if QVARIANT_API == 1:
     def getQVariantValue(variant):
         return variant.toPyObject()
 else:
