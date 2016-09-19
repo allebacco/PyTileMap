@@ -1,3 +1,5 @@
+from __future__ import print_function, absolute_import
+
 from PyQt4.Qt import Qt, pyqtSlot
 from PyQt4.QtGui import QGraphicsView
 

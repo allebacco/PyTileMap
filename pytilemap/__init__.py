@@ -1,3 +1,5 @@
+from __future__ import print_function, absolute_import
+
 from .mapscene import MapGraphicsScene
 from .mapview import MapGraphicsView
 from .mapitems import MapGraphicsCircleItem, MapGraphicsLineItem, \

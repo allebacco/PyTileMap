@@ -1,3 +1,5 @@
+from __future__ import print_function, absolute_import
+
 import numpy as np
 
 from PyQt4.QtCore import QLineF, QPointF, QRectF
@@ -5,6 +7,8 @@ from PyQt4.QtGui import QGraphicsEllipseItem, QGraphicsLineItem, \
     QGraphicsPathItem, QPainterPath, QGraphicsPixmapItem, \
     QGraphicsSimpleTextItem, QGraphicsItem, QGraphicsRectItem, \
     QGraphicsLineItem, QGraphicsItemGroup, QPen, QBrush, QColor
+
+from .functions import getQVariantValue
 
 
 class MapItem(object):
@@ -29,9 +33,10 @@ class MapItem(object):
                 oldScene.sigZoomChanged.disconnect(self.setZoom)
             # Connect the new scene, if any
             if value is not None:
-                value.sigZoomChanged.connect(self.setZoom)
+                newScene = getQVariantValue(value)
+                newScene.sigZoomChanged.connect(self.setZoom)
                 # Setup the new position of the item
-                self.updatePosition(value)
+                self.updatePosition(newScene)
         return self.QtParentClass.itemChange(self, change, value)
 
     def setZoom(self, zoom):
@@ -85,7 +90,7 @@ class MapGraphicsCircleItem(QGraphicsEllipseItem, MapItem):
         pos = scene.posFromLonLat(self._lon, self._lat)
         r = self._radius
         self.prepareGeometryChange()
-        self.setPos(pos.x() - r, pos.y() - r)
+        self.setPos(pos[0] - r, pos[1] - r)
 
     def setLonLat(self, longitude, latitude):
         """Set the center coordinates of the circle.
@@ -168,11 +173,11 @@ class MapGraphicsLineItem(QGraphicsLineItem, MapItem):
     def updatePosition(self, scene):
         pos0 = scene.posFromLonLat(self._lon0, self._lat0)
         pos1 = scene.posFromLonLat(self._lon1, self._lat1)
-        deltaPos = pos1 - pos0
+        deltaPos = QPointF(pos1[0] - pos0[0], pos1[1] - pos0[1])
 
         self.prepareGeometryChange()
         self.setLine(QLineF(QPointF(0.0, 0.0), deltaPos))
-        self.setPos(pos0)
+        self.setPos(pos0[0], pos0[1])
 
     def setLonLat(self, lon0, lat0, lon1, lat1):
         self._lon0 = lon0
@@ -256,7 +261,7 @@ class MapGraphicsPixmapItem(QGraphicsPixmapItem, MapItem):
         """
         pos = scene.posFromLonLat(self._lon, self._lat)
         self.prepareGeometryChange()
-        self.setPos(pos)
+        self.setPos(pos[0], pos[1])
 
     def setLonLat(self, longitude, latitude):
         """Update the origin coordinates of the item.
@@ -320,7 +325,7 @@ class MapGraphicsLinesGroupItem(QGraphicsItem, MapItem):
         linesGroup = QGraphicsItemGroup(parent=self)
         self._linesGroup = linesGroup
         self._lines = [QGraphicsLineItem(parent=linesGroup) for i in range(len(longitudes)-1)]
-    
+
     def paint(self, painter, option, widget=None):
         pass
 

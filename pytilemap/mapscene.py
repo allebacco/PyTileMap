@@ -1,3 +1,5 @@
+from __future__ import print_function, absolute_import, division
+
 from numpy import log, tan, cos, arctan, exp, floor
 from numpy import pi as PI
 
@@ -9,6 +11,7 @@ from .mapitems import MapGraphicsCircleItem, MapGraphicsLineItem, \
     MapGraphicsPolylineItem, MapGraphicsPixmapItem, MapGraphicsTextItem, \
     MapGraphicsRectItem, MapGraphicsLinesGroupItem
 from .maplegenditem import MapLegendItem
+from .functions import iterRange
 
 
 PI_div_180 = PI / 180.0
@@ -110,8 +113,8 @@ class MapGraphicsScene(QGraphicsScene):
         emptyTilePix = self._emptyTile
         tilePixmaps = self._tilePixmaps
 
-        for x in range(numXtiles):
-            for y in range(numYtiles):
+        for x in iterRange(numXtiles):
+            for y in iterRange(numYtiles):
                 tp = (x + left, y + top)
                 box = self.tileRect(tp[0], tp[1])
                 # Use default gray image if tile image is missing
@@ -146,7 +149,7 @@ class MapGraphicsScene(QGraphicsScene):
         self._tileSource.abortAllRequests()
 
         # Re-center map so that the point on which it was zoomed is in the same position
-        self.setCenter(coord.x(), coord.y())
+        self.setCenter(coord[0], coord[1])
         pos_corr = self.views()[0].mapToScene(pos)
         center = self.sceneRect().center()
         self.translate(center.x() - pos_corr.x(), center.y() - pos_corr.y())
@@ -213,8 +216,8 @@ class MapGraphicsScene(QGraphicsScene):
         zoom = self._zoom
 
         # Request load of new tiles
-        for x in range(numXtiles):
-            for y in range(numYtiles):
+        for x in iterRange(numXtiles):
+            for y in iterRange(numYtiles):
                 tp = (left + x, top + y)
                 # Request tile only if missing
                 if tp not in tilePixmaps:
@@ -260,7 +263,7 @@ class MapGraphicsScene(QGraphicsScene):
         """
         rect = QRectF(self.sceneRect())
         pos = self.posFromLonLat(lon, lat)
-        rect.moveCenter(pos)
+        rect.moveCenter(QPointF(pos[0], pos[1]))
         self.setSceneRect(rect)
 
     def translate(self, dx, dy):
@@ -284,8 +287,7 @@ class MapGraphicsScene(QGraphicsScene):
             lat(float or numpy.ndarray): Latitude value or values.
 
         Returns:
-            If input data is float, QPointF with the position of the input coordinate.
-            If input data is array, tuple of numpy.ndarray (x, y) with the positions of the input coordinates.
+            tuple: (x, y) with the positions of the input coordinates.
         """
         zn = 1 << self._zoom
         zn = float(zn * self._tileSource.tileSize())
@@ -293,8 +295,6 @@ class MapGraphicsScene(QGraphicsScene):
         ty = (1.0 - log(tan(lat * PI_div_180) + 1.0 / cos(lat * PI_div_180)) / PI) / 2.0
         tx *= zn
         ty *= zn
-        if type(tx) in [float, int]:
-            return QPointF(tx, ty)
         return (tx, ty)
 
     def lonLatFromPos(self, x, y):
@@ -307,8 +307,7 @@ class MapGraphicsScene(QGraphicsScene):
             y(float, int or numpy.ndarray): Y value or values.
 
         Returns:
-            If input data is float, QPointF with the coordinate of the input position.
-            If input data is array, tuple of numpy.ndarray (x, y) with the coordinates of the input positions.
+            tuple: (lon, lat) with the coordinates of the input positions.
         """
         tdim = float(self._tileSource.tileSize())
         tx = x / tdim
@@ -317,8 +316,6 @@ class MapGraphicsScene(QGraphicsScene):
         lon = tx / zn * 360.0 - 180.0
         n = PI - PI2 * ty / zn
         lat = PI_div_180_inv * arctan(0.5 * (exp(n) - exp(-n)))
-        if type(tx) in [float, int]:
-            return QPointF(lon, lat)
         return (lon, lat)
 
     def tileFromPos(self, x, y):

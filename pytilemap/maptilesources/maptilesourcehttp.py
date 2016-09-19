@@ -1,3 +1,6 @@
+from __future__ import print_function, absolute_import
+
+
 from PyQt4.Qt import Qt, pyqtSignal, pyqtSlot
 from PyQt4.QtCore import QObject, QByteArray, QUrl, QThread, QDateTime
 from PyQt4.QtGui import QDesktopServices, QPixmap
@@ -5,6 +8,7 @@ from PyQt4.QtNetwork import QNetworkRequest, QNetworkDiskCache, QNetworkAccessMa
     QNetworkReply, QNetworkCacheMetaData
 
 from .maptilesource import MapTileSource
+from ..functions import getQVariantValue
 
 
 class MapTileHTTPCache(QNetworkDiskCache):
@@ -86,7 +90,7 @@ class MapTileHTTPLoader(QObject):
 
     @pyqtSlot(QNetworkReply)
     def handleNetworkData(self, reply):
-        tp = reply.request().attribute(QNetworkRequest.User)  # .toPyObject()
+        tp = getQVariantValue(reply.request().attribute(QNetworkRequest.User))
         if tp in self._tileInDownload:
             del self._tileInDownload[tp]
 
@@ -100,10 +104,11 @@ class MapTileHTTPLoader(QObject):
     @pyqtSlot()
     def abortRequest(self, x, y, zoom):
         p = (x, y, zoom)
-        reply = self._tileInDownload[p]
-        del self._tileInDownload[p]
-        reply.close()
-        reply.deleteLater()
+        if p in self._tileInDownload:
+            reply = self._tileInDownload[p]
+            del self._tileInDownload[p]
+            reply.close()
+            reply.deleteLater()
 
     @pyqtSlot()
     def abortAllRequests(self):
