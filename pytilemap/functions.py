@@ -26,4 +26,3 @@ if PYTHON_VERSION == 2:
     iterRange = xrange
 else:
     iterRange = range
-
