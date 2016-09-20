@@ -2,7 +2,11 @@ import sys
 import sip
 import numpy as np
 
+from PyQt4.Qt import Qt
 from PyQt4.QtGui import QColor, QBrush, QPen
+
+SolidLine = Qt.SolidLine
+SolidPattern = Qt.SolidPattern
 
 __all__ = [
     'getQVariantValue',
@@ -26,8 +30,11 @@ else:
 
 if PYTHON_VERSION == 2:
     iterRange = xrange
+    import itertools
+    izip = itertools.izip
 else:
     iterRange = range
+    izip = zip
 
 
 def makeColorFromInts(ints):
@@ -144,4 +151,19 @@ def makeColor(args):
         makeFunction = makeColorFromList
 
     return makeFunction(args)
+
+
+def makeBrush(color, style=SolidPattern):
+    color = makeColor(color)
+    if isinstance(color, list):
+        return [QBrush(c, style) for c in color]
+    return QBrush(color, style)
+
+
+def makePen(color, width=1.0, style=SolidLine):
+    brush = makeBrush(color)
+    if isinstance(brush, list):
+        if not hasattr(width, '__iter__'):
+            width = np.full(len(brush), width, dtype=np.float64)
+        return [QPen(b, w, style=style) for b, w in izip(brush, width)]
 
