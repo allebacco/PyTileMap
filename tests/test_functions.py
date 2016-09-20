@@ -1,13 +1,14 @@
 import pytest
 import numpy as np
 
-from PyQt4.QtGui import QColor, QBrush
+from PyQt4.QtGui import QColor, QBrush, QPen
 from PyQt4.Qt import Qt
 
 from pytilemap.functions import makeColorFromInts, makeColorFromFloats, makeColorFromStr, \
-    makeColorFromList, makeColorFromNdArray, makeColor, makeBrush
+    makeColorFromList, makeColorFromNdArray, makeColor, makeBrush, makePen
 
 SolidLine = Qt.SolidLine
+DashLine = Qt.DashLine
 SolidPattern = Qt.SolidPattern
 NoBrush = Qt.NoBrush
 Dense1Pattern = Qt.Dense1Pattern
@@ -152,3 +153,58 @@ def test_make_brush_list_of_colors(colorArgs, qcolor, style):
     testBrush = makeBrush(colorArgs, style=style)
     refBrushes = [QBrush(c, style=style) for c in qcolor]
     assert testBrush == refBrushes
+
+
+@pytest.mark.parametrize('colorArgs,qcolor', [
+    ((1, 2, 3, 4), QColor(1, 2, 3, 4)),
+    ((1, 2, 3), QColor(1, 2, 3, 255)),
+    ((0.1, 0.2, 0.3, 0.4), QColor(0.1 * 255, 0.2 * 255, 0.3 * 255, 0.4 * 255)),
+    ((0.1, 0.2, 0.3), QColor(0.1 * 255, 0.2 * 255, 0.3 * 255, 255)),
+    ('#FFAA11', QColor(255, 170, 17)),
+    ('green', QColor(0, 128, 0)),
+])
+@pytest.mark.parametrize('style', [SolidLine, DashLine])
+@pytest.mark.parametrize('width', [0.0, 1, 3.])
+def test_make_pen_single_color(colorArgs, qcolor, width, style):
+    testPen = makePen(colorArgs, width=width, style=style)
+    assert testPen == QPen(QBrush(qcolor), width, style=style)
+
+
+@pytest.mark.parametrize('colorArgs,qcolor', [
+    (COLOR_ARG_LIST_INT, COLOR_ARG_LIST_INT_REF),
+    (COLOR_ARG_LIST_FLOAT, COLOR_ARG_LIST_FLOAT_REF),
+    (COLOR_ARG_NDARRAY_INT3, COLOR_ARG_NDARRAY_INT3_REF),
+    (COLOR_ARG_NDARRAY_INT3.astype(np.int32), COLOR_ARG_NDARRAY_INT3_REF),
+    (COLOR_ARG_NDARRAY_INT4, COLOR_ARG_NDARRAY_INT4_REF),
+    (COLOR_ARG_NDARRAY_INT4.astype(np.int32), COLOR_ARG_NDARRAY_INT4_REF),
+    (COLOR_ARG_NDARRAY_FLOAT3, COLOR_ARG_NDARRAY_FLOAT3_REF),
+    (COLOR_ARG_NDARRAY_FLOAT3.astype(np.float32), COLOR_ARG_NDARRAY_FLOAT3_REF),
+    (COLOR_ARG_NDARRAY_FLOAT4, COLOR_ARG_NDARRAY_FLOAT4_REF),
+    (COLOR_ARG_NDARRAY_FLOAT4.astype(np.float32), COLOR_ARG_NDARRAY_FLOAT4_REF),
+])
+@pytest.mark.parametrize('style', [SolidLine, DashLine])
+@pytest.mark.parametrize('width', [0., 1, 3.])
+def test_make_pen_list_of_colors(colorArgs, qcolor, width, style):
+    testPen = makePen(colorArgs, width=width, style=style)
+    refPen = [QPen(QBrush(c), width, style=style) for c in qcolor]
+    assert testPen == refPen
+
+
+@pytest.mark.parametrize('colorArgs,qcolor', [
+    (COLOR_ARG_LIST_INT, COLOR_ARG_LIST_INT_REF),
+    (COLOR_ARG_LIST_FLOAT, COLOR_ARG_LIST_FLOAT_REF),
+    (COLOR_ARG_NDARRAY_INT3, COLOR_ARG_NDARRAY_INT3_REF),
+    (COLOR_ARG_NDARRAY_INT3.astype(np.int32), COLOR_ARG_NDARRAY_INT3_REF),
+    (COLOR_ARG_NDARRAY_INT4, COLOR_ARG_NDARRAY_INT4_REF),
+    (COLOR_ARG_NDARRAY_INT4.astype(np.int32), COLOR_ARG_NDARRAY_INT4_REF),
+    (COLOR_ARG_NDARRAY_FLOAT3, COLOR_ARG_NDARRAY_FLOAT3_REF),
+    (COLOR_ARG_NDARRAY_FLOAT3.astype(np.float32), COLOR_ARG_NDARRAY_FLOAT3_REF),
+    (COLOR_ARG_NDARRAY_FLOAT4, COLOR_ARG_NDARRAY_FLOAT4_REF),
+    (COLOR_ARG_NDARRAY_FLOAT4.astype(np.float32), COLOR_ARG_NDARRAY_FLOAT4_REF),
+])
+@pytest.mark.parametrize('style', [SolidLine, DashLine])
+@pytest.mark.parametrize('width', [(0., 1, 3.)])
+def test_make_pen_list_of_colors_and_widths(colorArgs, qcolor, width, style):
+    testPen = makePen(colorArgs, width=width, style=style)
+    refPen = [QPen(QBrush(c), w, style=style) for c, w in zip(qcolor, width)]
+    assert testPen == refPen

@@ -115,8 +115,10 @@ def makeColorFromList(colorList):
         makeFunction = makeColorFromFloats
     elif isinstance(element, (int, np.integer)):
         makeFunction = makeColorFromInts
-    else:
+    elif isinstance(element, str):
         makeFunction = makeColorFromStr
+    else:
+        makeFunction = QColor
 
     return [makeFunction(row) for row in colorList]
 
@@ -166,4 +168,5 @@ def makePen(color, width=1.0, style=SolidLine):
         if not hasattr(width, '__iter__'):
             width = np.full(len(brush), width, dtype=np.float64)
         return [QPen(b, w, style=style) for b, w in izip(brush, width)]
+    return QPen(brush, width, style=style)
 
