@@ -371,7 +371,12 @@ class MapGraphicsLinesGroupItem(QGraphicsItem, MapItem):
         if scene is not None:
             for line in old_lines:
                 scene.removeItem(line)
-            self.updatePosition(scene)
 
         linesGroup = self._linesGroup
         self._lines = [QGraphicsLineItem(parent=linesGroup) for i in iterRange(len(longitudes)-1)]
+
+        if scene is not None:
+            self.updatePosition(scene)
+
+    def __getitem__(self, index):
+        return self._lines[index]
