@@ -2,13 +2,16 @@ from __future__ import print_function, absolute_import
 
 import numpy as np
 
+from PyQt4.Qt import Qt
 from PyQt4.QtCore import QLineF, QPointF, QRectF
 from PyQt4.QtGui import QGraphicsEllipseItem, QGraphicsLineItem, \
     QGraphicsPathItem, QPainterPath, QGraphicsPixmapItem, \
     QGraphicsSimpleTextItem, QGraphicsItem, QGraphicsRectItem, \
     QGraphicsLineItem, QGraphicsItemGroup, QPen, QBrush, QColor
 
-from .functions import getQVariantValue, iterRange
+from .functions import getQVariantValue, iterRange, makePen, izip
+
+SolidLine = Qt.SolidLine
 
 
 class MapItem(object):
@@ -244,7 +247,7 @@ class MapGraphicsPixmapItem(QGraphicsPixmapItem, MapItem):
             scene(MapGraphicsScene): Scene the item belongs to.
             parent(QGraphicsItem): Parent item.
         """
-        QGraphicsEllipseItem.__init__(self, parent=parent)
+        QGraphicsPixmapItem.__init__(self, parent=parent)
         MapItem.__init__(self)
 
         self._lon = longitude
@@ -321,6 +324,7 @@ class MapGraphicsLinesGroupItem(QGraphicsItem, MapItem):
 
         self._longitudes = np.array(longitudes, dtype=np.float32)
         self._latitudes = np.array(latitudes, dtype=np.float32)
+
         # Setup internal lines
         linesGroup = QGraphicsItemGroup(parent=self)
         self._linesGroup = linesGroup
@@ -332,17 +336,17 @@ class MapGraphicsLinesGroupItem(QGraphicsItem, MapItem):
     def boundingRect(self):
         return self._linesGroup.boundingRect()
 
-    def setLineColors(self, colors):
-        for i, line in enumerate(self._lines):
-            pen = line.pen()
-            pen.setColor(QColor(*colors[i]))
-            line.setPen(pen)
+    def setLineStyle(self, colors, width=1., style=SolidLine):
+        pen = makePen(colors, width=width, style=style)
 
-    def setLineSizes(self, sizes):
-        for i, line in enumerate(self._lines):
-            pen = line.pen()
-            pen.setWidth(sizes[i])
-            line.setPen(pen)
+        if isinstance(pen, list):
+            if len(pen) != len(self._lines):
+                raise ValueError('The number of colors must be equal to the number of lines')
+            for line, p in izip(self._lines, pen):
+                line.setPen(p)
+        else:
+            for line in self._lines:
+                line.setPen(pen)
 
     def updatePosition(self, scene):
         self.prepareGeometryChange()
@@ -363,11 +367,11 @@ class MapGraphicsLinesGroupItem(QGraphicsItem, MapItem):
         for line in old_lines:
             line.setParentItem(None)
 
-        linesGroup = self._linesGroup
-        self._lines = [QGraphicsLineItem(parent=linesGroup) for i in iterRange(len(longitudes)-1)]
-
         scene = self.scene()
         if scene is not None:
             for line in old_lines:
                 scene.removeItem(line)
             self.updatePosition(scene)
+
+        linesGroup = self._linesGroup
+        self._lines = [QGraphicsLineItem(parent=linesGroup) for i in iterRange(len(longitudes)-1)]
