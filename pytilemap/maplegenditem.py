@@ -7,7 +7,7 @@ from PyQt4.QtGui import QGraphicsObject, QGraphicsRectItem, QGraphicsItemGroup, 
     QGraphicsLineItem
 
 from .mapitems import MapItem
-from .functions import getQVariantValue, makePen
+from .functions import getQVariantValue, makePen, makeBrush
 
 
 class MapLegendEntryItem(QGraphicsItemGroup):
@@ -75,27 +75,19 @@ class MapLegendItem(QGraphicsObject, MapItem):
     def updatePosition(self, scene):
         pass
 
-    def addPoint(self, text, pen=None, color=None, size=20.0):
-        if pen is None and color is None:
-            raise ValueError("`pen` and `color` can't be both None")
-
+    def addPoint(self, text, color, border=None, size=20.0):
         shape = QGraphicsEllipseItem(size / 2.0, size / 2.0, size, size)
-        if color is not None:
-            shape.setBrush(QBrush(color))
-        if pen is not None:
-            shape.setPen(QPen(pen))
+        brush = makeBrush(color)
+        shape.setBrush(brush)
+        shape.setPen(makePen(border))
 
         self.addEntry(MapLegendEntryItem(shape, text))
 
-    def addRect(self, text, pen=None, color=None, size=20.0):
-        if pen is None and color is None:
-            raise ValueError("`pen` and `color` can't be both None")
-
+    def addRect(self, text, color, border=None, size=20.0):
         shape = QGraphicsRectItem(size / 2.0, size / 2.0, size, size)
-        if color is not None:
-            shape.setBrush(QBrush(color))
-        if pen is not None:
-            shape.setPen(QPen(pen))
+        brush = makeBrush(color)
+        shape.setBrush(brush)
+        shape.setPen(makePen(border))
 
         self.addEntry(MapLegendEntryItem(shape, text))
 

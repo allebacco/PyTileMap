@@ -156,6 +156,10 @@ def makeColor(args):
 
 
 def makeBrush(color, style=SolidPattern):
+    if color is None:
+        return QBrush(Qt.NoBrush)
+    if isinstance(color, QBrush):
+        return QBrush(color)
     color = makeColor(color)
     if isinstance(color, list):
         return [QBrush(c, style) for c in color]
@@ -163,6 +167,10 @@ def makeBrush(color, style=SolidPattern):
 
 
 def makePen(color, width=1.0, style=SolidLine):
+    if color is None:
+        return QPen(Qt.NoPen)
+    if isinstance(color, QPen):
+        return QPen(color)
     brush = makeBrush(color)
     if isinstance(brush, list):
         if not hasattr(width, '__iter__'):

@@ -126,11 +126,11 @@ class MapZoom(QtGui.QMainWindow):
         linesGroupItem.setLineStyle(POINTS_2_COLORS, width=POINTS_2_SIZES)
 
         legendItem = view.scene().addLegend()
-        legendItem.addPoint('Point 1', color=QtGui.QColor('#FF0000'))
-        legendItem.addRect('Rect 2', color=QtGui.QColor('#00FF00'))
-        legendItem.addPoint('Circle 3', color=QtGui.QColor('#0000FF'))
-        legendItem.addRect('Sphere 4', color=QtGui.QColor('#00FFFF'))
-        legendItem.addPoint('Polygon 5', color=QtGui.QColor('#FF00FF'))
+        legendItem.addPoint('Point 1', '#FF0000', border=None)
+        legendItem.addRect('Rect 2', '#00FF00', border=None)
+        legendItem.addPoint('Circle 3', '#0000FF', border=None)
+        legendItem.addRect('Sphere 4', '#00FFFF', border=None)
+        legendItem.addPoint('Polygon 5', '#FF00FF', border=None)
 
 
 def main():
