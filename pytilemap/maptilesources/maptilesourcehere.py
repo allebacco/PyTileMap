@@ -8,7 +8,7 @@ class MapTileSourceHereDemo(MapTileSourceHTTP):
     _server = None
 
     def __init__(self, tileSize=256, parent=None):
-        MapTileSourceHTTP.__init__(self, tileSize=tileSize, parent=parent)
+        MapTileSourceHTTP.__init__(self, tileSize=tileSize, minZoom=2, maxZoom=20, parent=parent)
         assert tileSize == 256 or tileSize == 512
         self._server = 0
 
@@ -28,7 +28,7 @@ class MapTileSourceHere(MapTileSourceHTTP):
                  scheme='normal.day', cit=True, tileType='maptile',
                  userAgent='(PyQt) TileMap 1.2 - HERE', mapHttpLoader=None,
                  minZoom=2, maxZoom=20, parent=None):
-        MapTileSourceHTTP.__init__(self, tileSize=tileSize, parent=parent)
+        MapTileSourceHTTP.__init__(self, tileSize=tileSize, minZoom=minZoom, maxZoom=maxZoom, parent=parent)
         assert tileSize == 256 or tileSize == 512
         self._server = 0
 
