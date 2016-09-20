@@ -8,7 +8,7 @@ from PyQt4.QtGui import QGraphicsEllipseItem, QGraphicsLineItem, \
     QGraphicsSimpleTextItem, QGraphicsItem, QGraphicsRectItem, \
     QGraphicsLineItem, QGraphicsItemGroup, QPen, QBrush, QColor
 
-from .functions import getQVariantValue
+from .functions import getQVariantValue, iterRange
 
 
 class MapItem(object):
@@ -212,7 +212,7 @@ class MapGraphicsPolylineItem(QGraphicsPathItem, MapItem):
             x, y = scene.posFromLonLat(self._longitudes, self._latitudes)
             dx = x - x[0]
             dy = y - y[0]
-            for i in range(1, count):
+            for i in iterRange(1, count):
                 path.lineTo(dx[i], dy[i])
             self.setPos(x[0], y[0])
 
@@ -324,7 +324,7 @@ class MapGraphicsLinesGroupItem(QGraphicsItem, MapItem):
         # Setup internal lines
         linesGroup = QGraphicsItemGroup(parent=self)
         self._linesGroup = linesGroup
-        self._lines = [QGraphicsLineItem(parent=linesGroup) for i in range(len(longitudes)-1)]
+        self._lines = [QGraphicsLineItem(parent=linesGroup) for i in iterRange(len(longitudes)-1)]
 
     def paint(self, painter, option, widget=None):
         pass
@@ -349,7 +349,7 @@ class MapGraphicsLinesGroupItem(QGraphicsItem, MapItem):
 
         x, y = scene.posFromLonLat(self._longitudes, self._latitudes)
         lines = self._lines
-        for i in range(0, len(lines)-1):
+        for i in iterRange(0, len(lines)-1):
             lines[i].setLine(x[i], y[i], x[i+1], y[i+1])
 
     def setLonLat(self, longitudes, latitudes):
@@ -364,7 +364,7 @@ class MapGraphicsLinesGroupItem(QGraphicsItem, MapItem):
             line.setParentItem(None)
 
         linesGroup = self._linesGroup
-        self._lines = [QGraphicsLineItem(parent=linesGroup) for i in range(len(longitudes)-1)]
+        self._lines = [QGraphicsLineItem(parent=linesGroup) for i in iterRange(len(longitudes)-1)]
 
         scene = self.scene()
         if scene is not None:
