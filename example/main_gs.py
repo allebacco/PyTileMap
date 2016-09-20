@@ -1,3 +1,5 @@
+import sys
+
 from PyQt4 import Qt, QtGui
 
 from pytilemap import MapGraphicsView, MapTileSourceHere, MapTileSourceOSM
@@ -121,8 +123,7 @@ class MapZoom(QtGui.QMainWindow):
             lons_2.append(p[1])
             lats_2.append(p[0])
         linesGroupItem = view.scene().addLinesGroup(lons_2, lats_2)
-        linesGroupItem.setLineColors(POINTS_2_COLORS)
-        linesGroupItem.setLineSizes(POINTS_2_SIZES)
+        linesGroupItem.setLineStyle(POINTS_2_COLORS, width=POINTS_2_SIZES)
 
         legendItem = view.scene().addLegend()
         legendItem.addPoint('Point 1', color=QtGui.QColor('#FF0000'))
@@ -132,14 +133,18 @@ class MapZoom(QtGui.QMainWindow):
         legendItem.addPoint('Polygon 5', color=QtGui.QColor('#FF00FF'))
 
 
-if __name__ == '__main__':
-    app = QtGui.QApplication([])
-    app.setApplicationName("TileMap")
-
+def main():
     w = MapZoom()
     w.setWindowTitle("OpenStreetMap")
 
     w.resize(800, 600)
     w.show()
 
-    app.exec_()
+    return app.exec_()
+
+if __name__ == '__main__':
+    app = QtGui.QApplication([])
+    app.setApplicationName("TileMap")
+
+    sys.exit(main())
+
