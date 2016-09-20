@@ -113,8 +113,8 @@ class MapGraphicsScene(QGraphicsScene):
         emptyTilePix = self._emptyTile
         tilePixmaps = self._tilePixmaps
 
-        for x in iterRange(numXtiles):
-            for y in iterRange(numYtiles):
+        for x in iterRange(numXtiles+1):
+            for y in iterRange(numYtiles+1):
                 tp = (x + left, y + top)
                 box = self.tileRect(tp[0], tp[1])
                 # Use default gray image if tile image is missing
@@ -145,8 +145,8 @@ class MapGraphicsScene(QGraphicsScene):
         self._zoom = zoomlevel
 
         # Clear cache and abort active requests
-        self._tilePixmaps.clear()
         self._tileSource.abortAllRequests()
+        self._tilePixmaps.clear()
 
         # Re-center map so that the point on which it was zoomed is in the same position
         self.setCenter(coord[0], coord[1])
@@ -202,12 +202,6 @@ class MapGraphicsScene(QGraphicsScene):
         tilesRect = self._tilesRect
         tilePixmaps = self._tilePixmaps
 
-        # Purge unused tiles
-        bound = tilesRect.adjusted(-10, -10, 10, 10)
-        for p in list(tilePixmaps.keys()):
-            if not bound.contains(p[0], p[1]):
-                del tilePixmaps[p]
-
         numXtiles = tilesRect.width()
         numYtiles = tilesRect.height()
         left = tilesRect.left()
@@ -228,7 +222,7 @@ class MapGraphicsScene(QGraphicsScene):
         self.update()
 
     def tileRect(self, tx, ty):
-        """Area fro a specific tile.
+        """Area for a specific tile.
 
         Args:
             tx(int): X coordinate of the tile.
