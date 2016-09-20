@@ -10,6 +10,8 @@ from PyQt4.QtNetwork import QNetworkRequest, QNetworkDiskCache, QNetworkAccessMa
 from .maptilesource import MapTileSource
 from ..functions import getQVariantValue
 
+DEFAULT_CACHE_SIZE = 1024 * 1024 * 100
+
 
 class MapTileHTTPCache(QNetworkDiskCache):
 
@@ -56,7 +58,7 @@ class MapTileHTTPLoader(QObject):
 
     tileLoaded = pyqtSignal(int, int, int, QByteArray)
 
-    def __init__(self, cacheSize=1024 * 1024 * 100, userAgent='(PyQt) TileMap 1.2', parent=None):
+    def __init__(self, cacheSize=DEFAULT_CACHE_SIZE, userAgent='(PyQt) TileMap 1.2', parent=None):
         QObject.__init__(self, parent=parent)
         self._manager = None
         self._cache = None
@@ -122,12 +124,16 @@ class MapTileSourceHTTP(MapTileSource):
     requestTileLoading = pyqtSignal(int, int, int, str)
     abortTileLoading = pyqtSignal()
 
-    def __init__(self, cacheSize=1024 * 1024 * 100, userAgent='(PyQt) TileMap 1.2',
-                 tileSize=256, minZoom=2, maxZoom=18, parent=None):
+    def __init__(self, cacheSize=DEFAULT_CACHE_SIZE, userAgent='(PyQt) TileMap 1.2',
+                 tileSize=256, minZoom=2, maxZoom=18, mapHttpLoader=None, parent=None):
         MapTileSource.__init__(self, tileSize=tileSize, minZoom=minZoom, maxZoom=maxZoom, parent=parent)
 
         self._thread = QThread(parent=self)
-        self._loader = MapTileHTTPLoader(cacheSize=cacheSize, userAgent=userAgent)
+
+        if mapHttpLoader is not None:
+            self._loader = mapHttpLoader
+        else:
+            self._loader = MapTileHTTPLoader(cacheSize=cacheSize, userAgent=userAgent)
         self._loader.moveToThread(self._thread)
 
         self.requestTileLoading.connect(self._loader.loadTile, Qt.QueuedConnection)
