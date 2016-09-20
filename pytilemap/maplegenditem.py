@@ -3,10 +3,11 @@ from __future__ import print_function, absolute_import
 from PyQt4.Qt import Qt, pyqtSlot
 from PyQt4.QtCore import QRectF, QPointF
 from PyQt4.QtGui import QGraphicsObject, QGraphicsRectItem, QGraphicsItemGroup, \
-    QGraphicsSimpleTextItem, QGraphicsEllipseItem, QPen, QBrush, QColor
+    QGraphicsSimpleTextItem, QGraphicsEllipseItem, QPen, QBrush, QColor, \
+    QGraphicsLineItem
 
 from .mapitems import MapItem
-from .functions import getQVariantValue
+from .functions import getQVariantValue, makePen
 
 
 class MapLegendEntryItem(QGraphicsItemGroup):
@@ -84,8 +85,7 @@ class MapLegendItem(QGraphicsObject, MapItem):
         if pen is not None:
             shape.setPen(QPen(pen))
 
-        entry = MapLegendEntryItem(shape, text)
-        self.addEntry(entry)
+        self.addEntry(MapLegendEntryItem(shape, text))
 
     def addRect(self, text, pen=None, color=None, size=20.0):
         if pen is None and color is None:
@@ -97,8 +97,13 @@ class MapLegendItem(QGraphicsObject, MapItem):
         if pen is not None:
             shape.setPen(QPen(pen))
 
-        entry = MapLegendEntryItem(shape, text)
-        self.addEntry(entry)
+        self.addEntry(MapLegendEntryItem(shape, text))
+
+    def addLine(self, text, color, width=1.):
+        shape = QGraphicsLineItem(10., 10., 20., 20.)
+        pen = makePen(color, width=width)
+        shape.setPen(pen)
+        self.addEntry(MapLegendEntryItem(shape, text))
 
     def addEntry(self, entry):
         self._entries.append(entry)
