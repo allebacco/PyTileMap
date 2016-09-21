@@ -195,8 +195,7 @@ class MapGraphicsScene(QGraphicsScene):
     def requestTiles(self):
         """Request the loading of tiles.
 
-        Remove from the cache the oldest tiles.
-        Check the loaded tiles and request the requests only
+        Check the loaded tiles and requests only
         the missing tiles.
         """
         tilesRect = self._tilesRect
