@@ -179,6 +179,9 @@ class MapGraphicsScene(QGraphicsScene):
             pos = self.sceneRect().center()
         self.zoomTo(pos, self._zoom - 1)
 
+    def zoom(self):
+        return self._zoom
+
     @pyqtSlot(int, int, int, QPixmap)
     def setTilePixmap(self, x, y, zoom, pixmap):
         """Set the image of the tile.
@@ -429,8 +432,23 @@ class MapGraphicsScene(QGraphicsScene):
         self.addItem(legend)
         return legend
 
-    def addScale(self, pos=None):
-        scaleItem = MapScaleItem(pos)
+    def addScale(self, **kwargs):
+        """Add a scale bar with text on the right bottom of the map
+
+        Keyword Args:
+            textPen: QPen to use for drawing the text. Default 'black'.
+            barBrush: QBrush to use for drawing the scale bar. Default (190, 190, 190, 160)
+            barPen: QPen to use for drawing the scale bar border. Default (190, 190, 190, 240) 
+            barBrushHover:  QBrush to use for drawing the scale bar when the mouse is over it.
+                Default (110, 110, 110, 255).
+            barPenHover: QPen to use for drawing the scale bar borderwhen the mouse is over it.
+                Default (90, 90, 90, 255).
+
+        Note:
+            Almost all the argumnets accepted by the functions.makeBrush() and functions.makePen()
+            are accepted.
+        """
+        scaleItem = MapScaleItem(**kwargs)
         self.addItem(scaleItem)
         return scaleItem
 
