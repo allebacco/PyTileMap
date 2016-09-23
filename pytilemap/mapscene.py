@@ -11,6 +11,7 @@ from .mapitems import MapGraphicsCircleItem, MapGraphicsLineItem, \
     MapGraphicsPolylineItem, MapGraphicsPixmapItem, MapGraphicsTextItem, \
     MapGraphicsRectItem, MapGraphicsLinesGroupItem
 from .maplegenditem import MapLegendItem
+from .mapescaleitem import MapScaleItem
 from .functions import iterRange
 
 
@@ -259,6 +260,11 @@ class MapGraphicsScene(QGraphicsScene):
         rect.moveCenter(QPointF(pos[0], pos[1]))
         self.setSceneRect(rect)
 
+    def center(self):
+        centerPos = self.sceneRect().center()
+        centerCoord = self.lonLatFromPos(centerPos.x(), centerPos.y())
+        return QPointF(centerCoord[0], centerCoord[1])
+
     def translate(self, dx, dy):
         """Translate the visible area by dx, dy pixels.
 
@@ -422,6 +428,11 @@ class MapGraphicsScene(QGraphicsScene):
         legend = MapLegendItem(pos=pos)
         self.addItem(legend)
         return legend
+
+    def addScale(self, pos=None):
+        scaleItem = MapScaleItem(pos)
+        self.addItem(scaleItem)
+        return scaleItem
 
     def addLinesGroup(self, longitudes, latitudes):
         item = MapGraphicsLinesGroupItem(longitudes, latitudes)
