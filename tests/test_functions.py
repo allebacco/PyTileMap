@@ -5,7 +5,7 @@ from PyQt4.QtGui import QColor, QBrush, QPen
 from PyQt4.Qt import Qt
 
 from pytilemap.functions import makeColorFromInts, makeColorFromFloats, makeColorFromStr, \
-    makeColorFromList, makeColorFromNdArray, makeColor, makeBrush, makePen
+    makeColorFromList, makeColorFromNdArray, makeColor, makeBrush, makePen, clip
 
 SolidLine = Qt.SolidLine
 DashLine = Qt.DashLine
@@ -208,3 +208,14 @@ def test_make_pen_list_of_colors_and_widths(colorArgs, qcolor, width, style):
     testPen = makePen(colorArgs, width=width, style=style)
     refPen = [QPen(QBrush(c), w, style=style) for c, w in zip(qcolor, width)]
     assert testPen == refPen
+
+
+@pytest.mark.parametrize('value,minValue,maxValue,expectedResult', [
+    (1, 0, 3, 1), (1., 0., 3., 1.),
+    (1, 2, 3, 2), (1., 2., 3., 2.),
+    (1, -2, 0, 0), (1., -2., 0., 0.),
+])
+def test_clip(value, minValue, maxValue, expectedResult):
+
+    testResult = clip(value, minValue, maxValue)
+    assert testResult == expectedResult
