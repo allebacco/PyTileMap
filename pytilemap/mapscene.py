@@ -1,7 +1,6 @@
 from __future__ import print_function, absolute_import, division
 
-from numpy import log, tan, cos, arctan, exp, floor
-from numpy import pi as PI
+from numpy import floor
 
 from PyQt4.Qt import Qt, pyqtSlot, pyqtSignal
 from PyQt4.QtCore import QRect, QRectF, QPointF, QSizeF
@@ -13,11 +12,7 @@ from .mapitems import MapGraphicsCircleItem, MapGraphicsLineItem, \
 from .maplegenditem import MapLegendItem
 from .mapescaleitem import MapScaleItem
 from .functions import iterRange
-
-
-PI_div_180 = PI / 180.0
-PI_div_180_inv = 180.0 / PI
-PI2 = PI * 2.0
+from .tileutils import posFromLonLat, lonLatFromPos
 
 
 class MapGraphicsScene(QGraphicsScene):
@@ -33,7 +28,7 @@ class MapGraphicsScene(QGraphicsScene):
             tileSource(MapTileSource): Source for loading the tiles.
             parent(QObject): Parent object, default `None`
         """
-        QGraphicsScene.__init__(self)
+        QGraphicsScene.__init__(self, parent=parent)
 
         self._zoom = 15
 
@@ -291,13 +286,7 @@ class MapGraphicsScene(QGraphicsScene):
         Returns:
             tuple: (x, y) with the positions of the input coordinates.
         """
-        zn = 1 << self._zoom
-        zn = float(zn * self._tileSource.tileSize())
-        tx = (lon + 180.0) / 360.0
-        ty = (1.0 - log(tan(lat * PI_div_180) + 1.0 / cos(lat * PI_div_180)) / PI) / 2.0
-        tx *= zn
-        ty *= zn
-        return (tx, ty)
+        return posFromLonLat(lon, lat, self._zoom, self._tileSource.tileSize())
 
     def lonLatFromPos(self, x, y):
         """Position in WGS84 coordinate of the scene coordinates.
@@ -311,14 +300,7 @@ class MapGraphicsScene(QGraphicsScene):
         Returns:
             tuple: (lon, lat) with the coordinates of the input positions.
         """
-        tdim = float(self._tileSource.tileSize())
-        tx = x / tdim
-        ty = y / tdim
-        zn = 1 << self._zoom
-        lon = tx / zn * 360.0 - 180.0
-        n = PI - PI2 * ty / zn
-        lat = PI_div_180_inv * arctan(0.5 * (exp(n) - exp(-n)))
-        return (lon, lat)
+        return lonLatFromPos(x, y, self._zoom, self._tileSource.tileSize())
 
     def tileFromPos(self, x, y):
         """Tile in the selected position.
