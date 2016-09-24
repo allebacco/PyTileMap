@@ -1,7 +1,7 @@
-import math
+import numpy as np
 from PyQt4.Qt import Qt, pyqtSlot
 from PyQt4.QtCore import QRectF, QPointF
-from PyQt4.QtGui import QGraphicsObject
+from PyQt4.QtGui import QGraphicsObject, QFontMetrics, QFont
 
 from .mapitems import MapItem
 from .functions import getQVariantValue, makePen, makeBrush, clip
@@ -16,8 +16,8 @@ class MapScaleItem(QGraphicsObject, MapItem):
 
     QtParentClass = QGraphicsObject
 
-    EarthCircumference = 1000.0 * 6372.7982 * 2.0 * math.pi
-    DegToRad = math.pi / 180.0
+    EarthCircumference = 1000.0 * 6372.7982 * 2.0 * np.pi
+    DegToRad = np.pi / 180.0
 
     _defaultScaleVisualization = {
         21: 5,
@@ -43,7 +43,7 @@ class MapScaleItem(QGraphicsObject, MapItem):
     """dict: Default meters that will be shown within the scale for each zoom value.
     """
 
-    def __init__(self, textPen='black', barBrush=(190, 190, 190, 160), barPen=(190, 190, 190, 240), 
+    def __init__(self, textPen='black', barBrush=(190, 190, 190, 160), barPen=(190, 190, 190, 240),
                  barBrushHover=(110, 110, 110, 255), barPenHover=(90, 90, 90, 255), parent=None):
         """Construct a scale bar with text on the right bottom of the map
 
@@ -78,9 +78,12 @@ class MapScaleItem(QGraphicsObject, MapItem):
 
         self._anchorPos = QPointF(30.0, 15.0)
 
-        self._barWidth = 0
-        self._text = ''
-        self._zoom = 0
+        self._barWidth = 0  # The width of the scale bar
+        self._text = ''  # The text to display near the scale bar
+        self._zoom = 0  # The current zoom level
+        self._meters = 0  # The number of meters used to evaluate the size of the scale bar and its text
+        self._meterPerPixelsEquator = 0  # The number of meters each pixel represents at the equator
+        self._textRect = QRectF()  # The bounding rect of text
 
     def itemChange(self, change, value):
         if change == self.ItemSceneChange:
@@ -92,16 +95,17 @@ class MapScaleItem(QGraphicsObject, MapItem):
             if value is not None:
                 newScene = getQVariantValue(value)
                 newScene.sceneRectChanged.connect(self._setSceneRect)
+                self.setZoom(newScene.zoom())
                 # Setup the new position of the item
-                self._setSceneRect(QRectF())
+                self._setSceneRect(newScene.sceneRect())
         return MapItem.itemChange(self, change, value)
 
     def updatePosition(self, scene):
-        self._zoom = scene.zoom()
-        self._setSceneRect(scene.sceneRect())
+        # Nothing to do here
+        pass
 
     def boundingRect(self):
-        return QRectF(0, 0, self._barWidth, 10)
+        return QRectF(0, 0, self._barWidth, 10).united(self._textRect)
 
     def paint(self, painter, option, widget):
         if self._hover:
@@ -113,12 +117,7 @@ class MapScaleItem(QGraphicsObject, MapItem):
         painter.drawRoundedRect(0, 0, self._barWidth, 10, 3, 3)
 
         painter.setPen(self._textPen)
-        textFlags = Qt.TextSingleLine
-        text = self._text
-        br = painter.boundingRect(QRectF(), textFlags, text)
-        br.moveLeft(-br.width() - 10.)
-        br.moveTop(-br.height() + 10 )
-        painter.drawText(br, text)
+        painter.drawText(self._textRect, Qt.TextSingleLine, self._text)
 
     @pyqtSlot(QRectF)
     def _setSceneRect(self, rect):
@@ -132,20 +131,9 @@ class MapScaleItem(QGraphicsObject, MapItem):
             return
         self.setVisible(True)
 
-        centerCoord = scene.center()
-        centerYRad = centerCoord.y() * self.DegToRad
-        zoom = self._zoom
-        meterPerPixels = self.EarthCircumference * math.cos(centerYRad) / math.pow(2.0, zoom + 8)
-
-        zoomSelector = clip(zoom, self._minZoomScale, self._maxZoomScale)
-        meters = self._scaleView[zoomSelector]
-        width = meters / meterPerPixels
-        self._barWidth = int(width)
-
-        if meters >= 1000:
-            self._text = '%d km' % (meters / 1000.0)
-        else:
-            self._text = '%d m' % meters
+        centerYRad = scene.center().y() * self.DegToRad
+        meterPerPixels = self._meterPerPixelsEquator * np.cos(centerYRad)
+        self._barWidth = int(self._meters / meterPerPixels)
 
     def setZoom(self, zoom):
         '''Set a new zoom level.
@@ -153,7 +141,20 @@ class MapScaleItem(QGraphicsObject, MapItem):
             zoom (int): The new zoom level.
         '''
         self._zoom = zoom
-        MapItem.setZoom(self, zoom)
+        zoomSelector = clip(zoom, self._minZoomScale, self._maxZoomScale)
+        meters = self._scaleView[zoomSelector]
+        if meters >= 1000:
+            self._text = '%d km' % (meters / 1000.0)
+        else:
+            self._text = '%d m' % meters
+        self._meters = meters
+        self._meterPerPixelsEquator = self.EarthCircumference / np.power(2.0, zoom + 8)
+
+        # Evaluate the bounding box of the current text
+        textRect = QFontMetrics(QFont()).boundingRect(self._text)
+        textRect.moveLeft(-textRect.width() - 10)
+        textRect.moveTop(-textRect.height() + 10)
+        self._textRect = QRectF(textRect)
 
     def setScaleForZoom(self, zoomLevel, metersInScaleBar):
         """Set the scale in meters/kilometers to be shown for a zoom level
@@ -171,6 +172,9 @@ class MapScaleItem(QGraphicsObject, MapItem):
         self._minZoomScale = min(self._scaleView.keys())
         self._maxZoomScale = max(self._scaleView.keys())
 
+        # Re-evaluate the scale bar for the current zoom
+        self.setZoom(self._zoom)
+
         self.update()
 
     def restoreDefaultScaleLevels(self):
@@ -179,6 +183,9 @@ class MapScaleItem(QGraphicsObject, MapItem):
         self._scaleView = MapScaleItem._defaultScaleVisualization.copy()
         self._minZoomScale = min(self._scaleView.keys())
         self._maxZoomScale = max(self._scaleView.keys())
+
+        # Re-evaluate the scale bar for the current zoom
+        self.setZoom(self._zoom)
 
         self.update()
 
@@ -215,4 +222,3 @@ class MapScaleItem(QGraphicsObject, MapItem):
         event.accept()
         self._hover = False
         self.update()
-
