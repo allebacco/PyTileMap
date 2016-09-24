@@ -6,6 +6,7 @@ from .mapitems import MapGraphicsCircleItem, MapGraphicsLineItem, \
     MapGraphicsPolylineItem, MapGraphicsPixmapItem, MapGraphicsTextItem, \
     MapGraphicsRectItem
 from .maplegenditem import MapLegendItem
+from .mapescaleitem import MapScaleItem
 from .maptilesources import MapTileSource, MapTileSourceHere, MapTileSourceHereDemo, \
     MapTileSourceOSM, MapTileSourceHTTP
 

@@ -178,3 +178,6 @@ def makePen(color, width=1.0, style=SolidLine):
         return [QPen(b, w, style=style) for b, w in izip(brush, width)]
     return QPen(brush, width, style=style)
 
+
+def clip(value, minValue, maxValue):
+    return min(maxValue, max(minValue, value))
