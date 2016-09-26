@@ -43,3 +43,18 @@ def test_posFromLonLat_viceversa(lons, lats, zooms):
                 assert abs(ll[1] - lat) < 1e-13
 
 
+@pytest.mark.parametrize('lons,lats,zooms', [(LONGITUDES, LATITUDES, ZOOMS)])
+def test_posFromLonLat_viceversa_array(lons, lats, zooms):
+
+    latitude = np.tile(lats, lons.size)
+    longitude = np.repeat(lons, lats.size)
+
+    for zoom in zooms:
+        tx, ty = posFromLonLat(longitude, latitude, zoom, 256)
+        refTx, refTy = posFromLonLat(longitude, latitude, zoom, 256)
+        assert np.nanmax(np.abs(tx - refTx)) < 1e-12
+        assert np.nanmax(np.abs(ty - refTy)) < 1e-12
+
+        ll = lonLatFromPos(tx, ty, zoom, 256)
+        assert np.nanmax(np.abs(ll[0] - longitude)) < 1e-12
+        assert np.nanmax(np.abs(ll[1] - latitude)) < 1e-12
