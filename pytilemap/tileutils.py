@@ -1,5 +1,6 @@
 from __future__ import division
 
+import numpy as np
 from numpy import log, tan, cos, arctan, exp
 from numpy import pi as PI
 
@@ -22,8 +23,33 @@ def posFromLonLat(lon, lat, zoom, tileSize):
     Returns:
         tuple: (x, y) with the positions of the input coordinates.
     """
-    tx = (lon + 180.0) / 360.0
+    if isinstance(lat, np.ndarray):
+        return _posFromLonLatArray(lon, lat, zoom, tileSize)
+
+    tx = lon + 180.0
+    tx /= 360.0
     ty = (1.0 - log(tan(lat * Deg2Rad) + 1.0 / cos(lat * Deg2Rad)) / PI) / 2.0
+    zn = (1 << zoom) * float(tileSize)
+    tx *= zn
+    ty *= zn
+    return tx, ty
+
+
+def _posFromLonLatArray(lon, lat, zoom, tileSize):
+    # Optimized implementation of posFromLonLat() function for numpy arrays
+    tx = lon + 180.0
+    tx /= 360.0
+
+    tmp = lat * Deg2Rad
+    ty = cos(tmp)
+    np.divide(1.0, ty, out=ty)
+    tan(tmp, out=tmp)
+    ty += tmp
+    log(ty, out=ty)
+    ty /= PI
+    np.subtract(1.0, ty, out=ty)
+    ty /= 2.0
+
     zn = (1 << zoom) * float(tileSize)
     tx *= zn
     ty *= zn
@@ -44,10 +70,42 @@ def lonLatFromPos(x, y, zoom, tileSize):
     Returns:
         tuple: (lon, lat) with the coordinates of the input positions.
     """
+    if isinstance(y, np.ndarray):
+        return _lonLatFromPosArray(x, y, zoom, tileSize)
+
     tx = x / tileSize
     ty = y / tileSize
     zn = 1 << zoom
     lon = tx / zn * 360.0 - 180.0
     n = PI - PI2 * ty / zn
     lat = arctan(0.5 * (exp(n) - exp(-n))) / Deg2Rad
+    return lon, lat
+
+
+def _lonLatFromPosArray(x, y, zoom, tileSize):
+    # Optimized implementation of posFromLonLat() function for numpy arrays
+    zn = 1 << zoom
+
+    lon = x / tileSize
+    lon /= zn
+    lon *= 360
+    lon -= 180
+
+    lat = y / tileSize
+    lat *= -PI2 / zn
+    lat += PI
+    tmp = lat * -1.0
+    exp(lat, out=lat)
+    exp(tmp, out=tmp)
+    lat -= tmp
+    lat *= 0.5
+    arctan(lat, out=lat)
+    lat /= Deg2Rad
+
+    #lat = arctan(0.5 * (exp(lat) - exp(-lat))) / Deg2Rad
+
+    #ty = y / tileSize
+    #n = PI - PI2 * ty / zn
+    #lat = arctan(0.5 * (exp(n) - exp(-n))) / Deg2Rad
+
     return lon, lat
