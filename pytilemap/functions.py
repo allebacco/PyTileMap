@@ -7,6 +7,9 @@ from PyQt4.QtGui import QColor, QBrush, QPen
 
 SolidLine = Qt.SolidLine
 SolidPattern = Qt.SolidPattern
+SquareCap = Qt.SquareCap
+BevelJoin = Qt.BevelJoin
+
 
 __all__ = [
     'getQVariantValue',
@@ -166,7 +169,7 @@ def makeBrush(color, style=SolidPattern):
     return QBrush(color, style)
 
 
-def makePen(color, width=1.0, style=SolidLine):
+def makePen(color, width=1.0, style=SolidLine, cap=SquareCap, join=BevelJoin):
     if color is None:
         return QPen(Qt.NoPen)
     if isinstance(color, QPen):
@@ -176,7 +179,7 @@ def makePen(color, width=1.0, style=SolidLine):
         if not hasattr(width, '__iter__'):
             width = np.full(len(brush), width, dtype=np.float64)
         return [QPen(b, w, style=style) for b, w in izip(brush, width)]
-    return QPen(brush, width, style=style)
+    return QPen(brush, width, style=style, cap=cap, join=join)
 
 
 def clip(value, minValue, maxValue):
