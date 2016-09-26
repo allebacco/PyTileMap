@@ -102,10 +102,4 @@ def _lonLatFromPosArray(x, y, zoom, tileSize):
     arctan(lat, out=lat)
     lat /= Deg2Rad
 
-    #lat = arctan(0.5 * (exp(lat) - exp(-lat))) / Deg2Rad
-
-    #ty = y / tileSize
-    #n = PI - PI2 * ty / zn
-    #lat = arctan(0.5 * (exp(n) - exp(-n))) / Deg2Rad
-
     return lon, lat
