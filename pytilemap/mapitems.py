@@ -81,9 +81,6 @@ class MapGraphicsCircleItem(QGraphicsEllipseItem, MapItem):
         self._lat = latitude
         self._radius = radius
 
-        d = self._radius * 2
-        self.setRect(0, 0, d, d)
-
     def updatePosition(self, scene):
         """Update the position of the circle.
 
@@ -92,8 +89,9 @@ class MapGraphicsCircleItem(QGraphicsEllipseItem, MapItem):
         """
         pos = scene.posFromLonLat(self._lon, self._lat)
         r = self._radius
+        d = r * 2
         self.prepareGeometryChange()
-        self.setPos(pos[0] - r, pos[1] - r)
+        self.setRect(pos[0] - r, pos[1] - r, d, d)
 
     def setLonLat(self, longitude, latitude):
         """Set the center coordinates of the circle.
@@ -104,6 +102,12 @@ class MapGraphicsCircleItem(QGraphicsEllipseItem, MapItem):
         """
         self._lon = longitude
         self._lat = latitude
+        scene = self.scene()
+        if scene is not None:
+            self.updatePosition(scene)
+
+    def setRadius(self, radius):
+        self._radius = radius
         scene = self.scene()
         if scene is not None:
             self.updatePosition(scene)
@@ -213,11 +217,9 @@ class MapGraphicsPolylineItem(QGraphicsPathItem, MapItem):
         count = len(self._longitudes)
         if count > 0:
             x, y = scene.posFromLonLat(self._longitudes, self._latitudes)
-            dx = x - x[0]
-            dy = y - y[0]
+            path.moveTo(x[0], y[0])
             for i in iterRange(1, count):
-                path.lineTo(dx[i], dy[i])
-            self.setPos(x[0], y[0])
+                path.lineTo(x[i], y[i])
 
         self.setPath(path)
 
