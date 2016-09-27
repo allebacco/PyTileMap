@@ -35,8 +35,8 @@ class MapItem(object):
             if oldScene is not None:
                 oldScene.sigZoomChanged.disconnect(self.setZoom)
             # Connect the new scene, if any
-            if value is not None:
-                newScene = getQVariantValue(value)
+            newScene = getQVariantValue(value)
+            if newScene is not None:
                 newScene.sigZoomChanged.connect(self.setZoom)
                 # Setup the new position of the item
                 self.updatePosition(newScene)
