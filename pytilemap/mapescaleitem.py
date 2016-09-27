@@ -50,7 +50,7 @@ class MapScaleItem(QGraphicsObject, MapItem):
         Keyword Args:
             textPen: QPen to use for drawing the text. Default 'black'.
             barBrush: QBrush to use for drawing the scale bar. Default (190, 190, 190, 160)
-            barPen: QPen to use for drawing the scale bar border. Default (190, 190, 190, 240) 
+            barPen: QPen to use for drawing the scale bar border. Default (190, 190, 190, 240)
             barBrushHover:  QBrush to use for drawing the scale bar when the mouse is over it.
                 Default (110, 110, 110, 255).
             barPenHover: QPen to use for drawing the scale bar borderwhen the mouse is over it.
@@ -62,6 +62,8 @@ class MapScaleItem(QGraphicsObject, MapItem):
         """
         QGraphicsObject.__init__(self, parent=parent)
         MapItem.__init__(self)
+
+        self.setZValue(100)
 
         self._textPen = makePen(textPen)
         self._barBrush = makeBrush(barBrush)
