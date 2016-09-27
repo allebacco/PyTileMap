@@ -52,6 +52,22 @@ class MapGraphicsScene(QGraphicsScene):
     def close(self):
         self._tileSource.close()
 
+    def setTileSource(self, newTileSource):
+        self._tileSource.tileReceived.disconnect(self.setTilePixmap)
+        self._tileSource.close()
+
+        self._tilePixmaps.clear()
+        self._tileInDownload = list()
+
+        self._tileSource = newTileSource
+        self._tileSource.setParent(self)
+        self._tileSource.tileReceived.connect(self.setTilePixmap)
+
+        self.requestTiles()
+
+        self.invalidate()
+        self.update()
+
     @pyqtSlot(QRectF)
     def onSceneRectChanged(self, rect):
         """Callback for the changing of the visible rect.
@@ -420,7 +436,7 @@ class MapGraphicsScene(QGraphicsScene):
         Keyword Args:
             textPen: QPen to use for drawing the text. Default 'black'.
             barBrush: QBrush to use for drawing the scale bar. Default (190, 190, 190, 160)
-            barPen: QPen to use for drawing the scale bar border. Default (190, 190, 190, 240) 
+            barPen: QPen to use for drawing the scale bar border. Default (190, 190, 190, 240)
             barBrushHover:  QBrush to use for drawing the scale bar when the mouse is over it.
                 Default (110, 110, 110, 255).
             barPenHover: QPen to use for drawing the scale bar borderwhen the mouse is over it.

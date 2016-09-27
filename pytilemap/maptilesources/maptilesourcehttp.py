@@ -145,6 +145,7 @@ class MapTileSourceHTTP(MapTileSource):
 
     @pyqtSlot()
     def close(self):
+        self.abortTileLoading.emit()
         self._thread.terminate()
 
     def url(self, x, y, zoom):
