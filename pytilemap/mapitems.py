@@ -206,8 +206,8 @@ class MapGraphicsPolylineItem(QGraphicsPathItem, MapItem):
 
         assert len(longitudes) == len(latitudes)
 
-        self._longitudes = np.array(longitudes, dtype=np.float32)
-        self._latitudes = np.array(latitudes, dtype=np.float32)
+        self._longitudes = np.array(longitudes, dtype=np.float64)
+        self._latitudes = np.array(latitudes, dtype=np.float64)
 
     def updatePosition(self, scene):
         path = QPainterPath()
@@ -226,8 +226,8 @@ class MapGraphicsPolylineItem(QGraphicsPathItem, MapItem):
     def setLonLat(self, longitudes, latitudes):
         assert len(longitudes) == len(latitudes)
 
-        self._longitudes = np.array(longitudes, dtype=np.float32)
-        self._latitudes = np.array(latitudes, dtype=np.float32)
+        self._longitudes = np.array(longitudes, dtype=np.float64)
+        self._latitudes = np.array(latitudes, dtype=np.float64)
         scene = self.scene()
         if scene is not None:
             self.updatePosition(scene)
@@ -324,8 +324,8 @@ class MapGraphicsLinesGroupItem(QGraphicsItem, MapItem):
         assert len(longitudes) == len(latitudes)
         assert len(longitudes) >= 2
 
-        self._longitudes = np.array(longitudes, dtype=np.float32)
-        self._latitudes = np.array(latitudes, dtype=np.float32)
+        self._longitudes = np.array(longitudes, dtype=np.float64)
+        self._latitudes = np.array(latitudes, dtype=np.float64)
 
         # Setup internal lines
         linesGroup = QGraphicsItemGroup(parent=self)
@@ -362,8 +362,8 @@ class MapGraphicsLinesGroupItem(QGraphicsItem, MapItem):
         assert len(longitudes) == len(latitudes)
         assert len(longitudes) >= 2
 
-        self._longitudes = np.array(longitudes, dtype=np.float32)
-        self._latitudes = np.array(latitudes, dtype=np.float32)
+        self._longitudes = np.array(longitudes, dtype=np.float64)
+        self._latitudes = np.array(latitudes, dtype=np.float64)
 
         old_lines = self._lines
         for line in old_lines:
