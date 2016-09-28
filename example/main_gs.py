@@ -132,7 +132,7 @@ class MapZoom(QtGui.QMainWindow):
         legendItem.addRect('Sphere 4', '#00FFFF', border=None)
         legendItem.addPoint('Polygon 5', '#FF00FF', border=None)
 
-        scaleItem = view.scene().addScale()
+        scaleItem = view.scene().addScale(anchor=Qt.Qt.BottomRightCorner)
 
 
 def main():
