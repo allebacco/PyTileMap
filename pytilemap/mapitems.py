@@ -38,9 +38,34 @@ class MapItem(object):
             newScene = getQVariantValue(value)
             if newScene is not None:
                 newScene.sigZoomChanged.connect(self.setZoom)
-                # Setup the new position of the item
+
+            # Notify the item that the scene is changed
+            self._sceneChanged(oldScene, newScene)
+
+            # Setup the new position of the item
+            if newScene is not None:
                 self.updatePosition(newScene)
+
         return self.QtParentClass.itemChange(self, change, value)
+
+    def _sceneChanged(self, oldScene, newScene):
+        """Called when the current scene change.
+
+
+        This function can be reimplemented for notifying that the scene has changed.
+        The function is called when the scene has changed, just before the
+        :meth:`~updatePosition` method.
+
+        Default
+
+        Args:
+            oldScene (QGraphicsScene): The old scene, or ``None``.
+            newScene (QGraphicsScene): The new scene, or ``None``.
+
+        Note:
+            :meth:`~scene` method is pointing to the ``oldScene``.
+        """
+        pass
 
     def setZoom(self, zoom):
         '''Set a new zoom level.

@@ -58,19 +58,13 @@ class MapLegendItem(QGraphicsObject, MapItem):
         self._entries = list()
         self._entriesGroup = QGraphicsItemGroup(parent=self)
 
-    def itemChange(self, change, value):
-        if change == self.ItemSceneChange:
-            # Disconnect the old scene, if any
-            oldScene = self.scene()
-            if oldScene is not None:
-                oldScene.sceneRectChanged.disconnect(self.setSceneRect)
-            # Connect the new scene, if any
-            if value is not None:
-                newScene = getQVariantValue(value)
-                newScene.sceneRectChanged.connect(self.setSceneRect)
-                # Setup the new position of the item
-                self.setSceneRect(QRectF())
-        return MapItem.itemChange(self, change, value)
+    def _sceneChanged(self, oldScene, newScene):
+        if oldScene is not None:
+            oldScene.sceneRectChanged.disconnect(self.setSceneRect)
+        if newScene is not None:
+            newScene.sceneRectChanged.connect(self.setSceneRect)
+            # Setup the new position of the item
+            self.setSceneRect(newScene.sceneRect())
 
     def updatePosition(self, scene):
         pass

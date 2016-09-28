@@ -102,20 +102,14 @@ class MapScaleItem(QGraphicsObject, MapItem):
         self._meterPerPixelsEquator = 0  # The number of meters each pixel represents at the equator
         self._textRect = QRectF()  # The bounding rect of text
 
-    def itemChange(self, change, value):
-        if change == self.ItemSceneChange:
-            # Disconnect the old scene, if any
-            oldScene = self.scene()
-            if oldScene is not None:
-                oldScene.sceneRectChanged.disconnect(self._setSceneRect)
-            # Connect the new scene, if any
-            if value is not None:
-                newScene = getQVariantValue(value)
-                newScene.sceneRectChanged.connect(self._setSceneRect)
-                self.setZoom(newScene.zoom())
-                # Setup the new position of the item
-                self._setSceneRect(newScene.sceneRect())
-        return MapItem.itemChange(self, change, value)
+    def _sceneChanged(self, oldScene, newScene):
+        if oldScene is not None:
+            oldScene.sceneRectChanged.disconnect(self._setSceneRect)
+        if newScene is not None:
+            newScene.sceneRectChanged.connect(self._setSceneRect)
+            # Setup the new position of the item
+            self.setZoom(newScene.zoom())
+            self._setSceneRect(newScene.sceneRect())
 
     def updatePosition(self, scene):
         # Nothing to do here
