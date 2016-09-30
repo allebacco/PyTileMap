@@ -47,13 +47,13 @@ class MapLegendItem(QGraphicsObject, MapItem):
     def __init__(self, pos=None, parent=None):
         QGraphicsObject.__init__(self, parent=parent)
         MapItem.__init__(self)
+        self.setZValue(200.0)
 
         self._anchorPos = QPointF(pos) if pos is not None else QPointF(10.0, 10.0)
 
         self._border = QGraphicsRectItem(parent=self)
         self._border.setPen(QPen(Qt.NoPen))
         self._border.setBrush(QBrush(QColor(190, 190, 190, 160)))
-        self._border.setZValue(-100.0)
 
         self._entries = list()
         self._entriesGroup = QGraphicsItemGroup(parent=self)
@@ -118,4 +118,34 @@ class MapLegendItem(QGraphicsObject, MapItem):
             right = max(right, entry.right() + 5.0)
 
         self._border.setRect(0.0, 0.0, right, bottom + 5.0)
+
+    def pen(self):
+        """Pen for the background of the legend
+
+        Returns:
+            QPen: Pen for the background of the legend
+        """
+        return self._border.pen()
+
+    def brush(self):
+        """Brush for the background of the legend
+
+        Returns:
+            QBrush: Brush for the background of the legend
+        """
+        return self._border.brush()
+
+    def setPen(self, *args, **kwargs):
+        """Set the pen for the background of the legend
+
+        The arguments are the same of the :func:`makePen` function
+        """
+        return self._border.setPen(makePen(*args, **kwargs))
+
+    def setBrush(self, *args, **kwargs):
+        """Set the brush for the background of the legend
+
+        The arguments are the same of the :func:`makeBrush` function
+        """
+        return self._border.setBrush(makeBrush(*args, **kwargs))
 
