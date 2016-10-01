@@ -2,8 +2,8 @@ import sys
 import sip
 import numpy as np
 
-from PyQt4.Qt import Qt
-from PyQt4.QtGui import QColor, QBrush, QPen
+from qtpy.QtCore import Qt
+from qtpy.QtGui import QColor, QBrush, QPen
 
 SolidLine = Qt.SolidLine
 SolidPattern = Qt.SolidPattern
@@ -12,24 +12,19 @@ BevelJoin = Qt.BevelJoin
 
 
 __all__ = [
-    'getQVariantValue',
     'iterRange',
+    'makeColorFromInts',
+    'makeColorFromFloats',
+    'makeColorFromStr',
+    'makeColorFromNdArray',
+    'makeColorFromList',
+    'makeColor',
+    'makeBrush',
+    'makePen',
+    'clip',
 ]
 
-try:
-    QVARIANT_API = sip.getapi('QVariant')
-except ValueError:
-    QVARIANT_API = 1
-
 PYTHON_VERSION = sys.version_info[0]
-
-
-if QVARIANT_API == 1:
-    def getQVariantValue(variant):
-        return variant.toPyObject()
-else:
-    def getQVariantValue(variant):
-        return variant
 
 if PYTHON_VERSION == 2:
     iterRange = xrange

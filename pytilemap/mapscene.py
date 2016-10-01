@@ -2,9 +2,9 @@ from __future__ import print_function, absolute_import, division
 
 from numpy import floor
 
-from PyQt4.Qt import Qt, pyqtSlot, pyqtSignal
-from PyQt4.QtCore import QRect, QRectF, QPointF, QSizeF
-from PyQt4.QtGui import QGraphicsScene, QPixmap
+from qtpy.QtCore import Qt, pyqtSlot, pyqtSignal, QRect, QRectF, QPointF, QSizeF
+from qtpy.QtGui import QPixmap
+from qtpy.QtWidgets import QGraphicsScene
 
 from .mapitems import MapGraphicsCircleItem, MapGraphicsLineItem, \
     MapGraphicsPolylineItem, MapGraphicsPixmapItem, MapGraphicsTextItem, \

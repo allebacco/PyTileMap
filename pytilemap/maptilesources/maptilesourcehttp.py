@@ -1,25 +1,24 @@
 from __future__ import print_function, absolute_import
 
-
-from PyQt4.Qt import Qt, pyqtSignal, pyqtSlot
-from PyQt4.QtCore import QObject, QByteArray, QUrl, QThread, QDateTime
-from PyQt4.QtGui import QDesktopServices, QPixmap
-from PyQt4.QtNetwork import QNetworkRequest, QNetworkDiskCache, QNetworkAccessManager, \
+from qtpy.QtCore import Qt, pyqtSignal, pyqtSlot, QObject, QByteArray, QUrl, QThread, \
+    QDateTime, QStandardPaths
+from qtpy.QtGui import QPixmap
+from qtpy.QtNetwork import QNetworkRequest, QNetworkDiskCache, QNetworkAccessManager, \
     QNetworkReply, QNetworkCacheMetaData
 
 from .maptilesource import MapTileSource
-from ..functions import getQVariantValue
+from ..qtsupport import getQVariantValue
 
 DEFAULT_CACHE_SIZE = 1024 * 1024 * 100
 
 
 class MapTileHTTPCache(QNetworkDiskCache):
 
-    def __init__(self, directory=None, maxSize=104857600, parent=None):
+    def __init__(self, directory=None, maxSize=DEFAULT_CACHE_SIZE, parent=None):
         QNetworkDiskCache.__init__(self, parent=parent)
 
         if directory is None:
-            directory = str(QDesktopServices.storageLocation(QDesktopServices.CacheLocation))
+            directory = QStandardPaths.writableLocation(QStandardPaths.TempLocation)
 
         self.setMaximumCacheSize(maxSize)
         self.setCacheDirectory(directory)
@@ -58,11 +57,19 @@ class MapTileHTTPLoader(QObject):
 
     tileLoaded = pyqtSignal(int, int, int, QByteArray)
 
-    def __init__(self, cacheSize=DEFAULT_CACHE_SIZE, userAgent='(PyQt) TileMap 1.2', parent=None):
+    def __init__(self, cacheSize=DEFAULT_CACHE_SIZE, userAgent=u'(PyQt) TileMap 1.2', parent=None):
         QObject.__init__(self, parent=parent)
         self._manager = None
         self._cache = None
         self._cacheSize = cacheSize
+
+        try:
+            # Convert user agent to bytes
+            userAgent = userAgent.encode()
+        except:
+            # no encode method exists. This hsould be the Python 2 case
+            pass
+
         self._userAgent = userAgent
         self._tileInDownload = dict()
 
@@ -84,7 +91,7 @@ class MapTileHTTPLoader(QObject):
             return
         else:
             request = QNetworkRequest(url=url)
-            request.setRawHeader('User-Agent', self._userAgent)
+            request.setRawHeader(b'User-Agent', self._userAgent)
             request.setAttribute(QNetworkRequest.User, key)
             self._tileInDownload[key] = self._manager.get(request)
 

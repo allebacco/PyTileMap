@@ -2,14 +2,14 @@ from __future__ import print_function, absolute_import
 
 import numpy as np
 
-from PyQt4.Qt import Qt
-from PyQt4.QtCore import QLineF, QPointF, QRectF
-from PyQt4.QtGui import QGraphicsEllipseItem, QGraphicsLineItem, \
-    QGraphicsPathItem, QPainterPath, QGraphicsPixmapItem, \
-    QGraphicsSimpleTextItem, QGraphicsItem, QGraphicsRectItem, \
-    QGraphicsLineItem, QGraphicsItemGroup, QPen, QBrush, QColor
+from qtpy.QtCore import Qt, QLineF, QPointF, QRectF
+from qtpy.QtGui import QPainterPath
+from qtpy.QtWidgets import QGraphicsEllipseItem, QGraphicsLineItem, \
+    QGraphicsPathItem, QGraphicsPixmapItem, QGraphicsItemGroup, \
+    QGraphicsSimpleTextItem, QGraphicsItem, QGraphicsRectItem
 
-from .functions import getQVariantValue, iterRange, makePen, izip
+from .functions import iterRange, makePen, izip
+from .qtsupport import getQVariantValue
 
 SolidLine = Qt.SolidLine
 

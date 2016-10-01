@@ -1,10 +1,13 @@
 import numpy as np
-from PyQt4.Qt import Qt, pyqtSlot
-from PyQt4.QtCore import QRectF, QPointF
-from PyQt4.QtGui import QGraphicsObject, QFontMetrics, QFont
+
+from qtpy.QtCore import Qt, pyqtSlot, QPointF, QRectF
+from qtpy.QtGui import QFontMetrics, QFont
+from qtpy.QtWidgets import QGraphicsObject
+
 
 from .mapitems import MapItem
-from .functions import getQVariantValue, makePen, makeBrush, clip
+from .functions import makePen, makeBrush, clip
+from .qtsupport import getQVariantValue
 
 
 class MapScaleItem(QGraphicsObject, MapItem):

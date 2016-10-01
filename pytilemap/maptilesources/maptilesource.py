@@ -1,8 +1,7 @@
 from __future__ import print_function, absolute_import
 
-from PyQt4.Qt import pyqtSignal, pyqtSlot
-from PyQt4.QtCore import QObject
-from PyQt4.QtGui import QPixmap
+from qtpy.QtCore import pyqtSignal, pyqtSlot, QObject
+from qtpy.QtGui import QPixmap
 
 
 class MapTileSource(QObject):

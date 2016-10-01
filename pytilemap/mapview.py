@@ -1,10 +1,14 @@
 from __future__ import print_function, absolute_import
 
-from PyQt4.Qt import Qt, pyqtSlot
-from PyQt4.QtGui import QGraphicsView
+#from PyQt4.Qt import Qt, pyqtSlot
+#from PyQt4.QtGui import QGraphicsView
+
+from qtpy.QtCore import Qt, pyqtSlot
+from qtpy.QtWidgets import QGraphicsView
 
 from .mapscene import MapGraphicsScene
 from .maptilesources.maptilesourceosm import MapTileSourceOSM
+from .qtsupport import wheelAngleDelta
 
 
 class MapGraphicsView(QGraphicsView):
@@ -82,7 +86,8 @@ class MapGraphicsView(QGraphicsView):
             event(QWheelEvent): Mouse wheel event.
         """
         event.accept()
-        if event.delta() > 0:
+        delta = wheelAngleDelta(event)
+        if delta > 0:
             self.scene().zoomIn(event.pos())
-        elif event.delta() < 0:
+        elif delta < 0:
             self.scene().zoomOut(event.pos())
