@@ -39,10 +39,10 @@ if qtpy.PYQT5:
     from qtpy.QtCore import QStandardPaths
 
     def getTemporaryFolder():
-        return QStandardPaths.writableLocation(QStandardPaths.TempLocation)
+        return QStandardPaths.writableLocation(QStandardPaths.CacheLocation)
 
 else:
     from qtpy.QtGui import QDesktopServices
 
     def getTemporaryFolder():
-        return QDesktopServices.storageLocation(QDesktopServices.TempLocation)
+        return QDesktopServices.storageLocation(QDesktopServices.CacheLocation)
