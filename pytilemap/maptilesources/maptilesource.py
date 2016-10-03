@@ -1,12 +1,12 @@
 from __future__ import print_function, absolute_import
 
-from qtpy.QtCore import pyqtSignal, pyqtSlot, QObject
+from qtpy.QtCore import Signal, Slot, QObject
 from qtpy.QtGui import QPixmap
 
 
 class MapTileSource(QObject):
 
-    tileReceived = pyqtSignal(int, int, int, QPixmap)
+    tileReceived = Signal(int, int, int, QPixmap)
 
     _tileSize = None
     _minZoom = None
@@ -30,10 +30,10 @@ class MapTileSource(QObject):
     def requestTile(self, x, y, zoom):
         raise NotImplementedError()
 
-    @pyqtSlot()
+    @Slot()
     def abortAllRequests(self):
         pass
 
-    @pyqtSlot()
+    @Slot()
     def close(self):
         pass

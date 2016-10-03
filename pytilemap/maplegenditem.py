@@ -1,6 +1,6 @@
 from __future__ import print_function, absolute_import
 
-from qtpy.QtCore import Qt, pyqtSlot, QRectF, QPointF
+from qtpy.QtCore import Qt, Slot, QRectF, QPointF
 from qtpy.QtGui import QPen, QBrush, QColor
 from qtpy.QtWidgets import QGraphicsObject, QGraphicsRectItem, QGraphicsItemGroup, \
     QGraphicsSimpleTextItem, QGraphicsEllipseItem, QGraphicsLineItem
@@ -102,7 +102,7 @@ class MapLegendItem(QGraphicsObject, MapItem):
     def paint(*args, **kwargs):
         pass
 
-    @pyqtSlot(QRectF)
+    @Slot(QRectF)
     def setSceneRect(self, rect):
         self.setPos(rect.topLeft() + self._anchorPos)
 

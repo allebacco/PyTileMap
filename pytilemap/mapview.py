@@ -1,9 +1,6 @@
 from __future__ import print_function, absolute_import
 
-#from PyQt4.Qt import Qt, pyqtSlot
-#from PyQt4.QtGui import QGraphicsView
-
-from qtpy.QtCore import Qt, pyqtSlot
+from qtpy.QtCore import Qt, Slot
 from qtpy.QtWidgets import QGraphicsView
 
 from .mapscene import MapGraphicsScene
@@ -29,7 +26,7 @@ class MapGraphicsView(QGraphicsView):
         self.setScene(scene)
         self._lastMousePos = None
 
-    @pyqtSlot()
+    @Slot()
     def close(self):
         self.scene().close()
         QGraphicsView.close(self)

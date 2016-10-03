@@ -1,6 +1,6 @@
 import numpy as np
 
-from qtpy.QtCore import Qt, pyqtSlot, QPointF, QRectF
+from qtpy.QtCore import Qt, Slot, QPointF, QRectF
 from qtpy.QtGui import QFontMetrics, QFont
 from qtpy.QtWidgets import QGraphicsObject
 
@@ -143,7 +143,7 @@ class MapScaleItem(QGraphicsObject, MapItem):
         painter.setPen(self._textPen)
         painter.drawText(textRect, Qt.TextSingleLine, self._text)
 
-    @pyqtSlot(QRectF)
+    @Slot(QRectF)
     def _setSceneRect(self, rect):
         self._updateScaleBar()
 

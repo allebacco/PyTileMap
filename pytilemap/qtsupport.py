@@ -33,3 +33,16 @@ if qtpy.PYQT5:
 else:
     def wheelAngleDelta(wheelEvent):
         return wheelEvent.delta()
+
+
+if qtpy.PYQT5:
+    from qtpy.QtCore import QStandardPaths
+
+    def getTemporaryFolder():
+        return QStandardPaths.writableLocation(QStandardPaths.TempLocation)
+
+else:
+    from qtpy.QtGui import QDesktopServices
+
+    def getTemporaryFolder():
+        return QDesktopServices.storageLocation(QDesktopServices.TempLocation)

@@ -1,7 +1,7 @@
 import sys
 
 from qtpy.QtCore import Qt
-from qtpy.QtGui import QGuiApplication, QPainter, QColor, QPen, QBrush, QPixmap
+from qtpy.QtGui import QPainter, QColor, QPen, QBrush, QPixmap
 from qtpy.QtWidgets import QMainWindow, QGraphicsView, QGraphicsItem, \
     QGraphicsSimpleTextItem, QApplication
 

@@ -1,13 +1,13 @@
 from __future__ import print_function, absolute_import
 
-from qtpy.QtCore import Qt, pyqtSignal, pyqtSlot, QObject, QByteArray, QUrl, QThread, \
-    QDateTime, QStandardPaths
+from qtpy.QtCore import Qt, Signal, Slot, QObject, QByteArray, QUrl, QThread, \
+    QDateTime
 from qtpy.QtGui import QPixmap
 from qtpy.QtNetwork import QNetworkRequest, QNetworkDiskCache, QNetworkAccessManager, \
     QNetworkReply, QNetworkCacheMetaData
 
 from .maptilesource import MapTileSource
-from ..qtsupport import getQVariantValue
+from ..qtsupport import getQVariantValue, getTemporaryFolder
 
 DEFAULT_CACHE_SIZE = 1024 * 1024 * 100
 
@@ -18,7 +18,7 @@ class MapTileHTTPCache(QNetworkDiskCache):
         QNetworkDiskCache.__init__(self, parent=parent)
 
         if directory is None:
-            directory = QStandardPaths.writableLocation(QStandardPaths.TempLocation)
+            directory = getTemporaryFolder()
 
         self.setMaximumCacheSize(maxSize)
         self.setCacheDirectory(directory)
@@ -55,7 +55,7 @@ class MapTileHTTPCache(QNetworkDiskCache):
 
 class MapTileHTTPLoader(QObject):
 
-    tileLoaded = pyqtSignal(int, int, int, QByteArray)
+    tileLoaded = Signal(int, int, int, QByteArray)
 
     def __init__(self, cacheSize=DEFAULT_CACHE_SIZE, userAgent=u'(PyQt) TileMap 1.2', parent=None):
         QObject.__init__(self, parent=parent)
@@ -73,7 +73,7 @@ class MapTileHTTPLoader(QObject):
         self._userAgent = userAgent
         self._tileInDownload = dict()
 
-    @pyqtSlot(int, int, int, str)
+    @Slot(int, int, int, str)
     def loadTile(self, x, y, zoom, url):
         if self._manager is None:
             self._manager = QNetworkAccessManager(parent=self)
@@ -97,7 +97,7 @@ class MapTileHTTPLoader(QObject):
 
         # print('In download:', len(self._tileInDownload))
 
-    @pyqtSlot(QNetworkReply)
+    @Slot(QNetworkReply)
     def handleNetworkData(self, reply):
         tp = getQVariantValue(reply.request().attribute(QNetworkRequest.User))
         if tp in self._tileInDownload:
@@ -110,7 +110,7 @@ class MapTileHTTPLoader(QObject):
         reply.close()
         reply.deleteLater()
 
-    @pyqtSlot()
+    @Slot()
     def abortRequest(self, x, y, zoom):
         p = (x, y, zoom)
         if p in self._tileInDownload:
@@ -119,7 +119,7 @@ class MapTileHTTPLoader(QObject):
             reply.close()
             reply.deleteLater()
 
-    @pyqtSlot()
+    @Slot()
     def abortAllRequests(self):
         for x, y, zoom in list(self._tileInDownload.keys()):
             self.abortRequest(x, y, zoom)
@@ -128,8 +128,8 @@ class MapTileHTTPLoader(QObject):
 
 class MapTileSourceHTTP(MapTileSource):
 
-    requestTileLoading = pyqtSignal(int, int, int, str)
-    abortTileLoading = pyqtSignal()
+    requestTileLoading = Signal(int, int, int, str)
+    abortTileLoading = Signal()
 
     def __init__(self, cacheSize=DEFAULT_CACHE_SIZE, userAgent='(PyQt) TileMap 1.2',
                  tileSize=256, minZoom=2, maxZoom=18, mapHttpLoader=None, parent=None):
@@ -150,7 +150,7 @@ class MapTileSourceHTTP(MapTileSource):
         self._thread.start()
         # self.destroyed.connect(self.close)
 
-    @pyqtSlot()
+    @Slot()
     def close(self):
         self.abortTileLoading.emit()
         self._thread.terminate()
@@ -163,7 +163,7 @@ class MapTileSourceHTTP(MapTileSource):
         self.requestTileLoading.emit(x, y, zoom, url)
         return None
 
-    @pyqtSlot(int, int, int, QByteArray)
+    @Slot(int, int, int, QByteArray)
     def handleTileDataLoaded(self, x, y, zoom, data):
         pix = QPixmap()
         pix.loadFromData(data)
