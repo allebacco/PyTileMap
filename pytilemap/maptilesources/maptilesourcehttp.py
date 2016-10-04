@@ -13,52 +13,11 @@ from ..functions import getQVariantValue
 DEFAULT_CACHE_SIZE = 1024 * 1024 * 100
 
 
-class MapTileHTTPCache(QNetworkDiskCache):
-
-    def __init__(self, directory=None, maxSize=104857600, parent=None):
-        QNetworkDiskCache.__init__(self, parent=parent)
-
-        if directory is None:
-            directory = str(QDesktopServices.storageLocation(QDesktopServices.CacheLocation))
-
-        self.setMaximumCacheSize(maxSize)
-        self.setCacheDirectory(directory)
-
-    def __contains__(self, url):
-        assert isinstance(url, QUrl)
-        return self.metaData(url).isValid()
-
-    def __getitem__(self, url):
-        assert isinstance(url, QUrl)
-        iodevice = self.data(url)
-        if iodevice is None:
-            return None
-        data = iodevice.readAll()
-        iodevice.close()
-        iodevice.deleteLater()
-        return data
-
-    def __setitem__(self, url, data):
-        assert isinstance(url, QUrl)
-        assert isinstance(data, QByteArray)
-        meta = QNetworkCacheMetaData()
-        meta.setUrl(url)
-        meta.setSaveToDisk(True)
-        meta.setExpirationDate(QDateTime.currentDateTime().addDays(7))
-        iodevice = self.prepare(meta)
-        iodevice.write(data)
-        self.insert(iodevice)
-
-    def __delitem__(self, url):
-        assert isinstance(url, QUrl)
-        self.remove(url)
-
-
 class MapTileHTTPLoader(QObject):
 
     tileLoaded = pyqtSignal(int, int, int, QByteArray)
 
-    def __init__(self, cacheSize=DEFAULT_CACHE_SIZE, userAgent='(PyQt) TileMap 1.2', parent=None):
+    def __init__(self, cacheSize=DEFAULT_CACHE_SIZE, userAgent='(PyQt) TileMap 1.0', parent=None):
         QObject.__init__(self, parent=parent)
         self._manager = None
         self._cache = None
@@ -71,21 +30,22 @@ class MapTileHTTPLoader(QObject):
         if self._manager is None:
             self._manager = QNetworkAccessManager(parent=self)
             self._manager.finished.connect(self.handleNetworkData)
-            self._cache = MapTileHTTPCache(maxSize=self._cacheSize, parent=self)
+            cache = QNetworkDiskCache()
+            cacheDir = QDesktopServices.storageLocation(QDesktopServices.CacheLocation)
+            cache.setCacheDirectory(cacheDir)
+            cache.setMaximumCacheSize(self._cacheSize)
+            self._manager.setCache(cache)
 
         key = (x, y, zoom)
         url = QUrl(url)
-        if url in self._cache:
-            # print('from cache')
-            data = self._cache[url]
-            self.tileLoaded.emit(x, y, zoom, data)
-        elif key in self._tileInDownload:
+        if key in self._tileInDownload:
             # Image is already in download... return
             return
         else:
             request = QNetworkRequest(url=url)
             request.setRawHeader('User-Agent', self._userAgent)
             request.setAttribute(QNetworkRequest.User, key)
+            request.setAttribute(QNetworkRequest.CacheLoadControlAttribute, QNetworkRequest.PreferCache)
             self._tileInDownload[key] = self._manager.get(request)
 
         # print('In download:', len(self._tileInDownload))
@@ -98,7 +58,6 @@ class MapTileHTTPLoader(QObject):
 
         if not reply.error():
             data = reply.readAll()
-            self._cache[reply.request().url()] = data
             self.tileLoaded.emit(tp[0], tp[1], tp[2], data)
         reply.close()
         reply.deleteLater()
