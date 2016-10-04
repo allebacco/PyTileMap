@@ -26,7 +26,7 @@ class MapTileSourceHere(MapTileSourceHTTP):
 
     def __init__(self, tileSize=256, app_id='DemoAppId01082013GAL', app_code='AJKnXv84fjrb0KIHawS0Tg',
                  scheme='normal.day', cit=True, tileType='maptile', mapType='base', imageFmt='png8',
-                 userAgent='(PyQt) TileMap 1.2 - HERE', mapHttpLoader=None,
+                 userAgent='(PyQt) TileMap 1.0 - HERE', mapHttpLoader=None,
                  minZoom=2, maxZoom=20, parent=None):
         MapTileSourceHTTP.__init__(self, tileSize=tileSize, minZoom=minZoom, maxZoom=maxZoom,
                                    mapHttpLoader=mapHttpLoader, parent=parent)

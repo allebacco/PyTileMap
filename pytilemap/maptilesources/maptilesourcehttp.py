@@ -44,17 +44,13 @@ class MapTileHTTPLoader(QObject):
 
         key = (x, y, zoom)
         url = QUrl(url)
-        if key in self._tileInDownload:
-            # Image is already in download... return
-            return
-        else:
+        if key not in self._tileInDownload:
+            # Request the image to the map service
             request = QNetworkRequest(url=url)
             request.setRawHeader(b'User-Agent', self._userAgent)
             request.setAttribute(QNetworkRequest.User, key)
             request.setAttribute(QNetworkRequest.CacheLoadControlAttribute, QNetworkRequest.PreferCache)
             self._tileInDownload[key] = self._manager.get(request)
-
-        # print('In download:', len(self._tileInDownload))
 
     @Slot(QNetworkReply)
     def handleNetworkData(self, reply):
@@ -81,45 +77,31 @@ class MapTileHTTPLoader(QObject):
     def abortAllRequests(self):
         for x, y, zoom in list(self._tileInDownload.keys()):
             self.abortRequest(x, y, zoom)
-        # print('In download:', len(self._tileInDownload))
 
 
 class MapTileSourceHTTP(MapTileSource):
 
-    requestTileLoading = Signal(int, int, int, str)
-    abortTileLoading = Signal()
-
-    def __init__(self, cacheSize=DEFAULT_CACHE_SIZE, userAgent='(PyQt) TileMap 1.2',
+    def __init__(self, cacheSize=DEFAULT_CACHE_SIZE, userAgent='(PyQt) TileMap 1.0',
                  tileSize=256, minZoom=2, maxZoom=18, mapHttpLoader=None, parent=None):
         MapTileSource.__init__(self, tileSize=tileSize, minZoom=minZoom, maxZoom=maxZoom, parent=parent)
-
-        self._thread = QThread(parent=self)
 
         if mapHttpLoader is not None:
             self._loader = mapHttpLoader
         else:
             self._loader = MapTileHTTPLoader(cacheSize=cacheSize, userAgent=userAgent)
-        self._loader.moveToThread(self._thread)
 
-        self.requestTileLoading.connect(self._loader.loadTile, Qt.QueuedConnection)
-        self.abortTileLoading.connect(self._loader.abortAllRequests, Qt.QueuedConnection)
-        self._loader.tileLoaded.connect(self.handleTileDataLoaded, Qt.QueuedConnection)
-
-        self._thread.start()
-        # self.destroyed.connect(self.close)
+        self._loader.tileLoaded.connect(self.handleTileDataLoaded)
 
     @Slot()
     def close(self):
-        self.abortTileLoading.emit()
-        self._thread.terminate()
+        self._loader.abortAllRequests()
 
     def url(self, x, y, zoom):
         raise NotImplementedError()
 
     def requestTile(self, x, y, zoom):
         url = self.url(x, y, zoom)
-        self.requestTileLoading.emit(x, y, zoom, url)
-        return None
+        self._loader.loadTile(x, y, zoom, url)
 
     @Slot(int, int, int, QByteArray)
     def handleTileDataLoaded(self, x, y, zoom, data):
@@ -128,7 +110,7 @@ class MapTileSourceHTTP(MapTileSource):
         self.tileReceived.emit(x, y, zoom, pix)
 
     def abortAllRequests(self):
-        self.abortTileLoading.emit()
+        self._loader.abortAllRequests()
 
     def imageFormat(self):
         return 'PNG'
