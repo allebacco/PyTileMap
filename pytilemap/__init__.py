@@ -27,3 +27,5 @@ __all__ = [
     'MapTileSourceOSM',
     'MapTileSourceHTTP',
 ]
+
+__version__ = '1.0.0'

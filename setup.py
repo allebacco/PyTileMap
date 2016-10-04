@@ -16,7 +16,7 @@ setup(
     # https://packaging.python.org/en/latest/single_source_version.html
     version='1.0.0',
 
-    description='Widget for tile maps in PyQt4',
+    description='Widget for tile maps in PyQt',
     long_description=long_description,
 
     # The project's main homepage.
