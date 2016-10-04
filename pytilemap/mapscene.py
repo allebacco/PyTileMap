@@ -1,26 +1,25 @@
-from numpy import log, tan, cos, arctan, exp, floor
-from numpy import pi as PI
+from __future__ import print_function, absolute_import, division
 
-from PyQt4.Qt import Qt, pyqtSlot, pyqtSignal
-from PyQt4.QtCore import QRect, QRectF, QPointF, QSizeF
-from PyQt4.QtGui import QGraphicsScene, QPixmap
+from numpy import floor
+
+from qtpy.QtCore import Qt, Slot, Signal, QRect, QRectF, QPointF, QSizeF
+from qtpy.QtGui import QPixmap
+from qtpy.QtWidgets import QGraphicsScene
 
 from .mapitems import MapGraphicsCircleItem, MapGraphicsLineItem, \
     MapGraphicsPolylineItem, MapGraphicsPixmapItem, MapGraphicsTextItem, \
-    MapGraphicsRectItem
+    MapGraphicsRectItem, MapGraphicsLinesGroupItem
 from .maplegenditem import MapLegendItem
-
-
-PI_div_180 = PI / 180.0
-PI_div_180_inv = 180.0 / PI
-PI2 = PI * 2.0
+from .mapescaleitem import MapScaleItem
+from .functions import iterRange
+from .tileutils import posFromLonLat, lonLatFromPos
 
 
 class MapGraphicsScene(QGraphicsScene):
     """Graphics scene for showing a slippy map.
     """
 
-    sigZoomChanged = pyqtSignal(int)
+    sigZoomChanged = Signal(int)
 
     def __init__(self, tileSource, parent=None):
         """Constructor.
@@ -29,7 +28,7 @@ class MapGraphicsScene(QGraphicsScene):
             tileSource(MapTileSource): Source for loading the tiles.
             parent(QObject): Parent object, default `None`
         """
-        QGraphicsScene.__init__(self)
+        QGraphicsScene.__init__(self, parent=parent)
 
         self._zoom = 15
 
@@ -49,11 +48,27 @@ class MapGraphicsScene(QGraphicsScene):
         self.setSceneRect(0.0, 0.0, 400, 300)
         self.sceneRectChanged.connect(self.onSceneRectChanged)
 
-    @pyqtSlot()
+    @Slot()
     def close(self):
         self._tileSource.close()
 
-    @pyqtSlot(QRectF)
+    def setTileSource(self, newTileSource):
+        self._tileSource.tileReceived.disconnect(self.setTilePixmap)
+        self._tileSource.close()
+
+        self._tilePixmaps.clear()
+        self._tileInDownload = list()
+
+        self._tileSource = newTileSource
+        self._tileSource.setParent(self)
+        self._tileSource.tileReceived.connect(self.setTilePixmap)
+
+        self.requestTiles()
+
+        self.invalidate()
+        self.update()
+
+    @Slot(QRectF)
     def onSceneRectChanged(self, rect):
         """Callback for the changing of the visible rect.
 
@@ -110,8 +125,8 @@ class MapGraphicsScene(QGraphicsScene):
         emptyTilePix = self._emptyTile
         tilePixmaps = self._tilePixmaps
 
-        for x in range(numXtiles):
-            for y in range(numYtiles):
+        for x in iterRange(numXtiles+1):
+            for y in iterRange(numYtiles+1):
                 tp = (x + left, y + top)
                 box = self.tileRect(tp[0], tp[1])
                 # Use default gray image if tile image is missing
@@ -142,11 +157,11 @@ class MapGraphicsScene(QGraphicsScene):
         self._zoom = zoomlevel
 
         # Clear cache and abort active requests
-        self._tilePixmaps.clear()
         self._tileSource.abortAllRequests()
+        self._tilePixmaps.clear()
 
         # Re-center map so that the point on which it was zoomed is in the same position
-        self.setCenter(coord.x(), coord.y())
+        self.setCenter(coord[0], coord[1])
         pos_corr = self.views()[0].mapToScene(pos)
         center = self.sceneRect().center()
         self.translate(center.x() - pos_corr.x(), center.y() - pos_corr.y())
@@ -175,7 +190,10 @@ class MapGraphicsScene(QGraphicsScene):
             pos = self.sceneRect().center()
         self.zoomTo(pos, self._zoom - 1)
 
-    @pyqtSlot(int, int, int, QPixmap)
+    def zoom(self):
+        return self._zoom
+
+    @Slot(int, int, int, QPixmap)
     def setTilePixmap(self, x, y, zoom, pixmap):
         """Set the image of the tile.
 
@@ -192,18 +210,11 @@ class MapGraphicsScene(QGraphicsScene):
     def requestTiles(self):
         """Request the loading of tiles.
 
-        Remove from the cache the oldest tiles.
-        Check the loaded tiles and request the requests only
+        Check the loaded tiles and requests only
         the missing tiles.
         """
         tilesRect = self._tilesRect
         tilePixmaps = self._tilePixmaps
-
-        # Purge unused tiles
-        bound = tilesRect.adjusted(-10, -10, 10, 10)
-        for p in list(tilePixmaps.keys()):
-            if not bound.contains(p[0], p[1]):
-                del tilePixmaps[p]
 
         numXtiles = tilesRect.width()
         numYtiles = tilesRect.height()
@@ -213,8 +224,8 @@ class MapGraphicsScene(QGraphicsScene):
         zoom = self._zoom
 
         # Request load of new tiles
-        for x in range(numXtiles):
-            for y in range(numYtiles):
+        for x in iterRange(numXtiles):
+            for y in iterRange(numYtiles):
                 tp = (left + x, top + y)
                 # Request tile only if missing
                 if tp not in tilePixmaps:
@@ -225,7 +236,7 @@ class MapGraphicsScene(QGraphicsScene):
         self.update()
 
     def tileRect(self, tx, ty):
-        """Area fro a specific tile.
+        """Area for a specific tile.
 
         Args:
             tx(int): X coordinate of the tile.
@@ -260,8 +271,13 @@ class MapGraphicsScene(QGraphicsScene):
         """
         rect = QRectF(self.sceneRect())
         pos = self.posFromLonLat(lon, lat)
-        rect.moveCenter(pos)
+        rect.moveCenter(QPointF(pos[0], pos[1]))
         self.setSceneRect(rect)
+
+    def center(self):
+        centerPos = self.sceneRect().center()
+        centerCoord = self.lonLatFromPos(centerPos.x(), centerPos.y())
+        return QPointF(centerCoord[0], centerCoord[1])
 
     def translate(self, dx, dy):
         """Translate the visible area by dx, dy pixels.
@@ -284,18 +300,9 @@ class MapGraphicsScene(QGraphicsScene):
             lat(float or numpy.ndarray): Latitude value or values.
 
         Returns:
-            If input data is float, QPointF with the position of the input coordinate.
-            If input data is array, tuple of numpy.ndarray (x, y) with the positions of the input coordinates.
+            tuple: (x, y) with the positions of the input coordinates.
         """
-        zn = 1 << self._zoom
-        zn = float(zn * self._tileSource.tileSize())
-        tx = (lon + 180.0) / 360.0
-        ty = (1.0 - log(tan(lat * PI_div_180) + 1.0 / cos(lat * PI_div_180)) / PI) / 2.0
-        tx *= zn
-        ty *= zn
-        if type(tx) in [float, int]:
-            return QPointF(tx, ty)
-        return (tx, ty)
+        return posFromLonLat(lon, lat, self._zoom, self._tileSource.tileSize())
 
     def lonLatFromPos(self, x, y):
         """Position in WGS84 coordinate of the scene coordinates.
@@ -307,19 +314,9 @@ class MapGraphicsScene(QGraphicsScene):
             y(float, int or numpy.ndarray): Y value or values.
 
         Returns:
-            If input data is float, QPointF with the coordinate of the input position.
-            If input data is array, tuple of numpy.ndarray (x, y) with the coordinates of the input positions.
+            tuple: (lon, lat) with the coordinates of the input positions.
         """
-        tdim = float(self._tileSource.tileSize())
-        tx = x / tdim
-        ty = y / tdim
-        zn = 1 << self._zoom
-        lon = tx / zn * 360.0 - 180.0
-        n = PI - PI2 * ty / zn
-        lat = PI_div_180_inv * arctan(0.5 * (exp(n) - exp(-n)))
-        if type(tx) in [float, int]:
-            return QPointF(lon, lat)
-        return (lon, lat)
+        return lonLatFromPos(x, y, self._zoom, self._tileSource.tileSize())
 
     def tileFromPos(self, x, y):
         """Tile in the selected position.
@@ -432,3 +429,28 @@ class MapGraphicsScene(QGraphicsScene):
         legend = MapLegendItem(pos=pos)
         self.addItem(legend)
         return legend
+
+    def addScale(self, **kwargs):
+        """Add a scale bar with text on the right bottom of the map
+
+        Keyword Args:
+            textPen: QPen to use for drawing the text. Default 'black'.
+            barBrush: QBrush to use for drawing the scale bar. Default (190, 190, 190, 160)
+            barPen: QPen to use for drawing the scale bar border. Default (190, 190, 190, 240)
+            barBrushHover:  QBrush to use for drawing the scale bar when the mouse is over it.
+                Default (110, 110, 110, 255).
+            barPenHover: QPen to use for drawing the scale bar borderwhen the mouse is over it.
+                Default (90, 90, 90, 255).
+
+        Note:
+            Almost all the argumnets accepted by the functions.makeBrush() and functions.makePen()
+            are accepted.
+        """
+        scaleItem = MapScaleItem(**kwargs)
+        self.addItem(scaleItem)
+        return scaleItem
+
+    def addLinesGroup(self, longitudes, latitudes):
+        item = MapGraphicsLinesGroupItem(longitudes, latitudes)
+        self.addItem(item)
+        return item

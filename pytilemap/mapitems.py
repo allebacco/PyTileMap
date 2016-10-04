@@ -1,9 +1,17 @@
+from __future__ import print_function, absolute_import
+
 import numpy as np
 
-from PyQt4.QtCore import QLineF, QPointF, QRectF
-from PyQt4.QtGui import QGraphicsEllipseItem, QGraphicsLineItem, \
-    QGraphicsPathItem, QPainterPath, QGraphicsPixmapItem, \
+from qtpy.QtCore import Qt, QLineF, QPointF, QRectF
+from qtpy.QtGui import QPainterPath
+from qtpy.QtWidgets import QGraphicsEllipseItem, QGraphicsLineItem, \
+    QGraphicsPathItem, QGraphicsPixmapItem, QGraphicsItemGroup, \
     QGraphicsSimpleTextItem, QGraphicsItem, QGraphicsRectItem
+
+from .functions import iterRange, makePen, izip
+from .qtsupport import getQVariantValue
+
+SolidLine = Qt.SolidLine
 
 
 class MapItem(object):
@@ -27,11 +35,37 @@ class MapItem(object):
             if oldScene is not None:
                 oldScene.sigZoomChanged.disconnect(self.setZoom)
             # Connect the new scene, if any
-            if value is not None:
-                value.sigZoomChanged.connect(self.setZoom)
-                # Setup the new position of the item
-                self.updatePosition(value)
+            newScene = getQVariantValue(value)
+            if newScene is not None:
+                newScene.sigZoomChanged.connect(self.setZoom)
+
+            # Notify the item that the scene is changed
+            self._sceneChanged(oldScene, newScene)
+
+            # Setup the new position of the item
+            if newScene is not None:
+                self.updatePosition(newScene)
+
         return self.QtParentClass.itemChange(self, change, value)
+
+    def _sceneChanged(self, oldScene, newScene):
+        """Called when the current scene change.
+
+
+        This function can be reimplemented for notifying that the scene has changed.
+        The function is called when the scene has changed, just before the
+        :meth:`~updatePosition` method.
+
+        Default
+
+        Args:
+            oldScene (QGraphicsScene): The old scene, or ``None``.
+            newScene (QGraphicsScene): The new scene, or ``None``.
+
+        Note:
+            :meth:`~scene` method is pointing to the ``oldScene``.
+        """
+        pass
 
     def setZoom(self, zoom):
         '''Set a new zoom level.
@@ -72,9 +106,6 @@ class MapGraphicsCircleItem(QGraphicsEllipseItem, MapItem):
         self._lat = latitude
         self._radius = radius
 
-        d = self._radius * 2
-        self.setRect(0, 0, d, d)
-
     def updatePosition(self, scene):
         """Update the position of the circle.
 
@@ -83,8 +114,9 @@ class MapGraphicsCircleItem(QGraphicsEllipseItem, MapItem):
         """
         pos = scene.posFromLonLat(self._lon, self._lat)
         r = self._radius
+        d = r * 2
         self.prepareGeometryChange()
-        self.setPos(pos.x() - r, pos.y() - r)
+        self.setRect(pos[0] - r, pos[1] - r, d, d)
 
     def setLonLat(self, longitude, latitude):
         """Set the center coordinates of the circle.
@@ -95,6 +127,12 @@ class MapGraphicsCircleItem(QGraphicsEllipseItem, MapItem):
         """
         self._lon = longitude
         self._lat = latitude
+        scene = self.scene()
+        if scene is not None:
+            self.updatePosition(scene)
+
+    def setRadius(self, radius):
+        self._radius = radius
         scene = self.scene()
         if scene is not None:
             self.updatePosition(scene)
@@ -167,11 +205,11 @@ class MapGraphicsLineItem(QGraphicsLineItem, MapItem):
     def updatePosition(self, scene):
         pos0 = scene.posFromLonLat(self._lon0, self._lat0)
         pos1 = scene.posFromLonLat(self._lon1, self._lat1)
-        deltaPos = pos1 - pos0
+        deltaPos = QPointF(pos1[0] - pos0[0], pos1[1] - pos0[1])
 
         self.prepareGeometryChange()
         self.setLine(QLineF(QPointF(0.0, 0.0), deltaPos))
-        self.setPos(pos0)
+        self.setPos(pos0[0], pos0[1])
 
     def setLonLat(self, lon0, lat0, lon1, lat1):
         self._lon0 = lon0
@@ -193,8 +231,8 @@ class MapGraphicsPolylineItem(QGraphicsPathItem, MapItem):
 
         assert len(longitudes) == len(latitudes)
 
-        self._longitudes = np.array(longitudes, dtype=np.float32)
-        self._latitudes = np.array(latitudes, dtype=np.float32)
+        self._longitudes = np.array(longitudes, dtype=np.float64)
+        self._latitudes = np.array(latitudes, dtype=np.float64)
 
     def updatePosition(self, scene):
         path = QPainterPath()
@@ -204,19 +242,17 @@ class MapGraphicsPolylineItem(QGraphicsPathItem, MapItem):
         count = len(self._longitudes)
         if count > 0:
             x, y = scene.posFromLonLat(self._longitudes, self._latitudes)
-            dx = x - x[0]
-            dy = y - y[0]
-            for i in range(1, count):
-                path.lineTo(dx[i], dy[i])
-            self.setPos(x[0], y[0])
+            path.moveTo(x[0], y[0])
+            for i in iterRange(1, count):
+                path.lineTo(x[i], y[i])
 
         self.setPath(path)
 
     def setLonLat(self, longitudes, latitudes):
         assert len(longitudes) == len(latitudes)
 
-        self._longitudes = np.array(longitudes, dtype=np.float32)
-        self._latitudes = np.array(latitudes, dtype=np.float32)
+        self._longitudes = np.array(longitudes, dtype=np.float64)
+        self._latitudes = np.array(latitudes, dtype=np.float64)
         scene = self.scene()
         if scene is not None:
             self.updatePosition(scene)
@@ -238,7 +274,7 @@ class MapGraphicsPixmapItem(QGraphicsPixmapItem, MapItem):
             scene(MapGraphicsScene): Scene the item belongs to.
             parent(QGraphicsItem): Parent item.
         """
-        QGraphicsEllipseItem.__init__(self, parent=parent)
+        QGraphicsPixmapItem.__init__(self, parent=parent)
         MapItem.__init__(self)
 
         self._lon = longitude
@@ -255,7 +291,7 @@ class MapGraphicsPixmapItem(QGraphicsPixmapItem, MapItem):
         """
         pos = scene.posFromLonLat(self._lon, self._lat)
         self.prepareGeometryChange()
-        self.setPos(pos)
+        self.setPos(pos[0], pos[1])
 
     def setLonLat(self, longitude, latitude):
         """Update the origin coordinates of the item.
@@ -300,3 +336,74 @@ class MapGraphicsTextItem(QGraphicsSimpleTextItem, MapItem):
         self.setPos(pos)
         if self._min_zoom is not None:
             self.setVisible(scene._zoom >= self._min_zoom)
+
+
+class MapGraphicsLinesGroupItem(QGraphicsItem, MapItem):
+
+    QtParentClass = QGraphicsItem
+
+    def __init__(self, longitudes, latitudes, parent=None):
+        QGraphicsItem.__init__(self, parent=parent)
+        MapItem.__init__(self)
+
+        assert len(longitudes) == len(latitudes)
+        assert len(longitudes) >= 2
+
+        self._longitudes = np.array(longitudes, dtype=np.float64)
+        self._latitudes = np.array(latitudes, dtype=np.float64)
+
+        # Setup internal lines
+        linesGroup = QGraphicsItemGroup(parent=self)
+        self._linesGroup = linesGroup
+        self._lines = [QGraphicsLineItem(parent=linesGroup) for i in iterRange(len(longitudes)-1)]
+
+    def paint(self, painter, option, widget=None):
+        pass
+
+    def boundingRect(self):
+        return self._linesGroup.boundingRect()
+
+    def setLineStyle(self, colors, width=1., style=SolidLine):
+        pen = makePen(colors, width=width, style=style)
+
+        if isinstance(pen, list):
+            if len(pen) != len(self._lines):
+                raise ValueError('The number of colors must be equal to the number of lines')
+            for line, p in izip(self._lines, pen):
+                line.setPen(p)
+        else:
+            for line in self._lines:
+                line.setPen(pen)
+
+    def updatePosition(self, scene):
+        self.prepareGeometryChange()
+
+        x, y = scene.posFromLonLat(self._longitudes, self._latitudes)
+        lines = self._lines
+        for i in iterRange(0, len(lines)-1):
+            lines[i].setLine(x[i], y[i], x[i+1], y[i+1])
+
+    def setLonLat(self, longitudes, latitudes):
+        assert len(longitudes) == len(latitudes)
+        assert len(longitudes) >= 2
+
+        self._longitudes = np.array(longitudes, dtype=np.float64)
+        self._latitudes = np.array(latitudes, dtype=np.float64)
+
+        old_lines = self._lines
+        for line in old_lines:
+            line.setParentItem(None)
+
+        scene = self.scene()
+        if scene is not None:
+            for line in old_lines:
+                scene.removeItem(line)
+
+        linesGroup = self._linesGroup
+        self._lines = [QGraphicsLineItem(parent=linesGroup) for i in iterRange(len(longitudes)-1)]
+
+        if scene is not None:
+            self.updatePosition(scene)
+
+    def __getitem__(self, index):
+        return self._lines[index]

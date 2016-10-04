@@ -1,9 +1,13 @@
-from PyQt4.Qt import Qt, pyqtSlot
-from PyQt4.QtCore import QRectF, QPointF
-from PyQt4.QtGui import QGraphicsObject, QGraphicsRectItem, QGraphicsItemGroup, \
-    QGraphicsSimpleTextItem, QGraphicsEllipseItem, QPen, QBrush, QColor
+from __future__ import print_function, absolute_import
+
+from qtpy.QtCore import Qt, Slot, QRectF, QPointF
+from qtpy.QtGui import QPen, QBrush, QColor
+from qtpy.QtWidgets import QGraphicsObject, QGraphicsRectItem, QGraphicsItemGroup, \
+    QGraphicsSimpleTextItem, QGraphicsEllipseItem, QGraphicsLineItem
 
 from .mapitems import MapItem
+from .functions import makePen, makeBrush
+from .qtsupport import getQVariantValue
 
 
 class MapLegendEntryItem(QGraphicsItemGroup):
@@ -43,58 +47,49 @@ class MapLegendItem(QGraphicsObject, MapItem):
     def __init__(self, pos=None, parent=None):
         QGraphicsObject.__init__(self, parent=parent)
         MapItem.__init__(self)
+        self.setZValue(200.0)
 
         self._anchorPos = QPointF(pos) if pos is not None else QPointF(10.0, 10.0)
 
         self._border = QGraphicsRectItem(parent=self)
         self._border.setPen(QPen(Qt.NoPen))
         self._border.setBrush(QBrush(QColor(190, 190, 190, 160)))
-        self._border.setZValue(-100.0)
 
         self._entries = list()
         self._entriesGroup = QGraphicsItemGroup(parent=self)
 
-    def itemChange(self, change, value):
-        if change == self.ItemSceneChange:
-            # Disconnect the old scene, if any
-            oldScene = self.scene()
-            if oldScene is not None:
-                oldScene.sceneRectChanged.disconnect(self.setSceneRect)
-            # Connect the new scene, if any
-            if value is not None:
-                value.sceneRectChanged.connect(self.setSceneRect)
-                # Setup the new position of the item
-                self.setSceneRect(QRectF())
-        return MapItem.itemChange(self, change, value)
+    def _sceneChanged(self, oldScene, newScene):
+        if oldScene is not None:
+            oldScene.sceneRectChanged.disconnect(self.setSceneRect)
+        if newScene is not None:
+            newScene.sceneRectChanged.connect(self.setSceneRect)
+            # Setup the new position of the item
+            self.setSceneRect(newScene.sceneRect())
 
     def updatePosition(self, scene):
         pass
 
-    def addPoint(self, text, pen=None, color=None, size=20.0):
-        if pen is None and color is None:
-            raise ValueError("`pen` and `color` can't be both None")
-
+    def addPoint(self, text, color, border=None, size=20.0):
         shape = QGraphicsEllipseItem(size / 2.0, size / 2.0, size, size)
-        if color is not None:
-            shape.setBrush(QBrush(color))
-        if pen is not None:
-            shape.setPen(QPen(pen))
+        brush = makeBrush(color)
+        shape.setBrush(brush)
+        shape.setPen(makePen(border))
 
-        entry = MapLegendEntryItem(shape, text)
-        self.addEntry(entry)
+        self.addEntry(MapLegendEntryItem(shape, text))
 
-    def addRect(self, text, pen=None, color=None, size=20.0):
-        if pen is None and color is None:
-            raise ValueError("`pen` and `color` can't be both None")
-
+    def addRect(self, text, color, border=None, size=20.0):
         shape = QGraphicsRectItem(size / 2.0, size / 2.0, size, size)
-        if color is not None:
-            shape.setBrush(QBrush(color))
-        if pen is not None:
-            shape.setPen(QPen(pen))
+        brush = makeBrush(color)
+        shape.setBrush(brush)
+        shape.setPen(makePen(border))
 
-        entry = MapLegendEntryItem(shape, text)
-        self.addEntry(entry)
+        self.addEntry(MapLegendEntryItem(shape, text))
+
+    def addLine(self, text, color, width=1.):
+        shape = QGraphicsLineItem(10., 10., 20., 20.)
+        pen = makePen(color, width=width)
+        shape.setPen(pen)
+        self.addEntry(MapLegendEntryItem(shape, text))
 
     def addEntry(self, entry):
         self._entries.append(entry)
@@ -107,7 +102,7 @@ class MapLegendItem(QGraphicsObject, MapItem):
     def paint(*args, **kwargs):
         pass
 
-    @pyqtSlot(QRectF)
+    @Slot(QRectF)
     def setSceneRect(self, rect):
         self.setPos(rect.topLeft() + self._anchorPos)
 
@@ -123,4 +118,34 @@ class MapLegendItem(QGraphicsObject, MapItem):
             right = max(right, entry.right() + 5.0)
 
         self._border.setRect(0.0, 0.0, right, bottom + 5.0)
+
+    def pen(self):
+        """Pen for the background of the legend
+
+        Returns:
+            QPen: Pen for the background of the legend
+        """
+        return self._border.pen()
+
+    def brush(self):
+        """Brush for the background of the legend
+
+        Returns:
+            QBrush: Brush for the background of the legend
+        """
+        return self._border.brush()
+
+    def setPen(self, *args, **kwargs):
+        """Set the pen for the background of the legend
+
+        The arguments are the same of the :func:`makePen` function
+        """
+        return self._border.setPen(makePen(*args, **kwargs))
+
+    def setBrush(self, *args, **kwargs):
+        """Set the brush for the background of the legend
+
+        The arguments are the same of the :func:`makeBrush` function
+        """
+        return self._border.setBrush(makeBrush(*args, **kwargs))
 

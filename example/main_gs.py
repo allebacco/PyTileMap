@@ -1,4 +1,9 @@
-from PyQt4 import Qt, QtGui
+import sys
+
+from qtpy.QtCore import Qt
+from qtpy.QtGui import QPainter, QColor, QPen, QBrush, QPixmap
+from qtpy.QtWidgets import QMainWindow, QGraphicsView, QGraphicsItem, \
+    QGraphicsSimpleTextItem, QApplication
 
 from pytilemap import MapGraphicsView, MapTileSourceHere, MapTileSourceOSM
 
@@ -57,74 +62,92 @@ POINTS = [(44.837632, 10.201736),
           (44.832954, 10.191164),
           (44.832810, 10.191037)]
 
+POINTS_2 = [(44.868333, 10.053170), (44.867962, 10.053621), (44.867141, 10.054216),
+            (44.866913, 10.054104), (44.867016, 10.053782), (44.866993, 10.052650)]
+POINTS_2_SIZES = [1, 2, 3, 4, 5]
+POINTS_2_COLORS = [(255, 0, 0), (0, 255, 0), (0, 0, 255), (255, 255, 0), (0, 0, 0)]
 
-class MapZoom(QtGui.QMainWindow):
+
+class MapZoom(QMainWindow):
 
     def __init__(self):
-        QtGui.QMainWindow.__init__(self)
+        QMainWindow.__init__(self)
 
         view = MapGraphicsView(tileSource=MapTileSourceHere())
 
         self.setCentralWidget(view)
 
         view.scene().setCenter(10.065990, 44.861041)
-        view.setOptimizationFlag(QtGui.QGraphicsView.DontSavePainterState, True)
-        view.setRenderHint(QtGui.QPainter.Antialiasing, True)
-        view.setRenderHint(QtGui.QPainter.SmoothPixmapTransform, True)
+        view.setOptimizationFlag(QGraphicsView.DontSavePainterState, True)
+        view.setRenderHint(QPainter.Antialiasing, True)
+        view.setRenderHint(QPainter.SmoothPixmapTransform, True)
 
         pointItem = view.scene().addCircle(10.068640, 44.860767, 3.0)
-        pointItem.setBrush(Qt.Qt.black)
+        pointItem.setBrush(Qt.black)
         pointItem.setToolTip('10.068640, 44.860767')
-        pointItem.setFlag(QtGui.QGraphicsItem.ItemIsSelectable, True)
+        pointItem.setFlag(QGraphicsItem.ItemIsSelectable, True)
 
         lats = list()
         lons = list()
         for p in POINTS:
             pointItem = view.scene().addCircle(p[1], p[0], 5.0)
-            pointItem.setBrush(Qt.Qt.green)
-            pointItem.setPen(QtGui.QPen(Qt.Qt.NoPen))
+            pointItem.setBrush(Qt.green)
+            pointItem.setPen(QPen(Qt.NoPen))
             pointItem.setToolTip('%f, %f' % (p[1], p[0]))
-            pointItem.setFlag(QtGui.QGraphicsItem.ItemIsSelectable, True)
+            pointItem.setFlag(QGraphicsItem.ItemIsSelectable, True)
             lons.append(p[1])
             lats.append(p[0])
 
         lineItem = view.scene().addLine(10.191037, 44.832810, 10.201736, 44.837632)
-        lineItem.setPen(QtGui.QPen(QtGui.QBrush(Qt.Qt.blue), 3.0))
+        lineItem.setPen(QPen(QBrush(Qt.blue), 3.0))
 
         polylineItem = view.scene().addPolyline(lons, lats)
-        polylineItem.setPen(QtGui.QPen(QtGui.QBrush(Qt.Qt.red), 3.0))
+        polylineItem.setPen(QPen(QBrush(Qt.red), 3.0))
 
-        pix = QtGui.QPixmap(24, 24)
-        pix.fill(Qt.Qt.red)
+        pix = QPixmap(24, 24)
+        pix.fill(Qt.red)
         pixmapItem = view.scene().addPixmap(10.090598, 44.857893, pix)
         pixmapItem.setOffset(-12, -12)
         pointItemPixmapOrigin = view.scene().addCircle(10.090598, 44.857893, 3.0)
-        pointItemPixmapOrigin.setBrush(Qt.Qt.black)
+        pointItemPixmapOrigin.setBrush(Qt.black)
 
         pointItemWithChild = view.scene().addCircle(10.083103, 44.858014, 3.0)
-        pointItemWithChild.setBrush(Qt.Qt.blue)
-        pointItemWithChild.setPen(QtGui.QPen(Qt.Qt.NoPen))
+        pointItemWithChild.setBrush(Qt.blue)
+        pointItemWithChild.setPen(QPen(Qt.NoPen))
 
-        textItem = QtGui.QGraphicsSimpleTextItem('Annotation\nfor blue point', parent=pointItemWithChild)
-        textItem.setBrush(QtGui.QBrush(QtGui.QColor(Qt.Qt.blue)))
+        textItem = QGraphicsSimpleTextItem('Annotation\nfor blue point', parent=pointItemWithChild)
+        textItem.setBrush(QBrush(QColor(Qt.blue)))
         textItem.setPos(-5, 3)
 
+        lats_2 = list()
+        lons_2 = list()
+        for p in POINTS_2:
+            lons_2.append(p[1])
+            lats_2.append(p[0])
+        linesGroupItem = view.scene().addLinesGroup(lons_2, lats_2)
+        linesGroupItem.setLineStyle(POINTS_2_COLORS, width=POINTS_2_SIZES)
+
         legendItem = view.scene().addLegend()
-        legendItem.addPoint('Point 1', color=QtGui.QColor('#FF0000'))
-        legendItem.addRect('Rect 2', color=QtGui.QColor('#00FF00'))
-        legendItem.addPoint('Circle 3', color=QtGui.QColor('#0000FF'))
-        legendItem.addRect('Sphere 4', color=QtGui.QColor('#00FFFF'))
-        legendItem.addPoint('Polygon 5', color=QtGui.QColor('#FF00FF'))
+        legendItem.addPoint('Point 1', '#FF0000', border=None)
+        legendItem.addRect('Rect 2', '#00FF00', border=None)
+        legendItem.addPoint('Circle 3', '#0000FF', border=None)
+        legendItem.addRect('Sphere 4', '#00FFFF', border=None)
+        legendItem.addPoint('Polygon 5', '#FF00FF', border=None)
+
+        scaleItem = view.scene().addScale(anchor=Qt.BottomRightCorner)
 
 
-if __name__ == '__main__':
-    app = QtGui.QApplication([])
-    app.setApplicationName("TileMap")
-
+def main():
     w = MapZoom()
     w.setWindowTitle("OpenStreetMap")
 
     w.resize(800, 600)
     w.show()
 
-    app.exec_()
+    return app.exec_()
+
+if __name__ == '__main__':
+    app = QApplication([])
+    app.setApplicationName("TileMap")
+
+    sys.exit(main())

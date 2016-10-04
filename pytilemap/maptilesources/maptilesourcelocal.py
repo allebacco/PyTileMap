@@ -1,6 +1,8 @@
+from __future__ import print_function, absolute_import
+
 import os
 
-from PyQt4.QtGui import QPixmap
+from qtpy.QtGui import QPixmap
 
 from .maptilesource import MapTileSource
 
