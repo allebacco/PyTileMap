@@ -7,7 +7,7 @@ from qtpy.QtNetwork import QNetworkRequest, QNetworkDiskCache, QNetworkAccessMan
     QNetworkReply, QNetworkCacheMetaData
 
 from .maptilesource import MapTileSource
-from ..qtsupport import getQVariantValue, getTemporaryFolder
+from ..qtsupport import getQVariantValue, getCacheFolder
 
 DEFAULT_CACHE_SIZE = 1024 * 1024 * 100
 
