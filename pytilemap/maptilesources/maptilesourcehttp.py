@@ -18,7 +18,7 @@ class MapTileHTTPCache(QNetworkDiskCache):
         QNetworkDiskCache.__init__(self, parent=parent)
 
         if directory is None:
-            directory = getTemporaryFolder()
+            directory = getCacheFolder()
 
         self.setMaximumCacheSize(maxSize)
         self.setCacheDirectory(directory)
