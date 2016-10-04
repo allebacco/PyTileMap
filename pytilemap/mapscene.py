@@ -2,9 +2,9 @@ from __future__ import print_function, absolute_import, division
 
 from numpy import floor
 
-from PyQt4.Qt import Qt, pyqtSlot, pyqtSignal
-from PyQt4.QtCore import QRect, QRectF, QPointF, QSizeF
-from PyQt4.QtGui import QGraphicsScene, QPixmap
+from qtpy.QtCore import Qt, Slot, Signal, QRect, QRectF, QPointF, QSizeF
+from qtpy.QtGui import QPixmap
+from qtpy.QtWidgets import QGraphicsScene
 
 from .mapitems import MapGraphicsCircleItem, MapGraphicsLineItem, \
     MapGraphicsPolylineItem, MapGraphicsPixmapItem, MapGraphicsTextItem, \
@@ -19,7 +19,7 @@ class MapGraphicsScene(QGraphicsScene):
     """Graphics scene for showing a slippy map.
     """
 
-    sigZoomChanged = pyqtSignal(int)
+    sigZoomChanged = Signal(int)
 
     def __init__(self, tileSource, parent=None):
         """Constructor.
@@ -48,7 +48,7 @@ class MapGraphicsScene(QGraphicsScene):
         self.setSceneRect(0.0, 0.0, 400, 300)
         self.sceneRectChanged.connect(self.onSceneRectChanged)
 
-    @pyqtSlot()
+    @Slot()
     def close(self):
         self._tileSource.close()
 
@@ -68,7 +68,7 @@ class MapGraphicsScene(QGraphicsScene):
         self.invalidate()
         self.update()
 
-    @pyqtSlot(QRectF)
+    @Slot(QRectF)
     def onSceneRectChanged(self, rect):
         """Callback for the changing of the visible rect.
 
@@ -193,7 +193,7 @@ class MapGraphicsScene(QGraphicsScene):
     def zoom(self):
         return self._zoom
 
-    @pyqtSlot(int, int, int, QPixmap)
+    @Slot(int, int, int, QPixmap)
     def setTilePixmap(self, x, y, zoom, pixmap):
         """Set the image of the tile.
 

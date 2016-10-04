@@ -1,8 +1,9 @@
 import pytest
 import numpy as np
 
-from PyQt4.QtGui import QColor, QBrush, QPen
-from PyQt4.Qt import Qt
+from qtpy.QtCore import Qt
+from qtpy.QtGui import QColor, QBrush, QPen
+
 
 from pytilemap.functions import makeColorFromInts, makeColorFromFloats, makeColorFromStr, \
     makeColorFromList, makeColorFromNdArray, makeColor, makeBrush, makePen, clip
