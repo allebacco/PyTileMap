@@ -2,7 +2,7 @@ from __future__ import print_function, absolute_import, division
 
 from numpy import floor
 
-from qtpy.QtCore import Qt, Slot, Signal, QRect, QRectF, QPointF, QSizeF
+from qtpy.QtCore import Qt, Slot, Signal, QRect, QRectF, QPointF, QSizeF, QPoint
 from qtpy.QtGui import QPixmap
 from qtpy.QtWidgets import QGraphicsScene
 
@@ -11,6 +11,7 @@ from .mapitems import MapGraphicsCircleItem, MapGraphicsLineItem, \
     MapGraphicsRectItem, MapGraphicsLinesGroupItem
 from .maplegenditem import MapLegendItem
 from .mapescaleitem import MapScaleItem
+from .mapnavitem import MapNavItem
 from .functions import iterRange
 from .tileutils import posFromLonLat, lonLatFromPos
 
@@ -176,7 +177,7 @@ class MapGraphicsScene(QGraphicsScene):
                            current center position.
         """
         if pos is None:
-            pos = self.sceneRect().center()
+            pos = QPoint(self.width()/2, self.height()/2)
         self.zoomTo(pos, self._zoom + 1)
 
     def zoomOut(self, pos=None):
@@ -187,8 +188,16 @@ class MapGraphicsScene(QGraphicsScene):
                            current center position.
         """
         if pos is None:
-            pos = self.sceneRect().center()
+            pos = QPoint(self.width()/2, self.height()/2)
         self.zoomTo(pos, self._zoom - 1)
+
+    @Slot()
+    def handleZoomIn(self):
+        self.zoomIn()
+
+    @Slot()
+    def handleZoomOut(self):
+        self.zoomOut()
 
     def zoom(self):
         return self._zoom
@@ -273,6 +282,7 @@ class MapGraphicsScene(QGraphicsScene):
         pos = self.posFromLonLat(lon, lat)
         rect.moveCenter(QPointF(pos[0], pos[1]))
         self.setSceneRect(rect)
+
 
     def center(self):
         centerPos = self.sceneRect().center()
@@ -424,6 +434,14 @@ class MapGraphicsScene(QGraphicsScene):
         item = MapGraphicsTextItem(longitude, latitude, text)
         self.addItem(item)
         return item
+
+    def addNavItem(self, anchor):
+        self.nav_item = MapNavItem(anchor)
+        self.addItem(self.nav_item)
+        self.nav_item.zoom_in_button.clicked.connect(self.handleZoomIn)
+        self.nav_item.zoom_out_button.clicked.connect(self.handleZoomOut)
+        return self.nav_item
+
 
     def addLegend(self, pos=QPointF(10.0, 10.0)):
         legend = MapLegendItem(pos=pos)

@@ -134,6 +134,8 @@ class MapZoom(QMainWindow):
         legendItem.addRect('Sphere 4', '#00FFFF', border=None)
         legendItem.addPoint('Polygon 5', '#FF00FF', border=None)
 
+        navItem = view.scene().addNavItem(anchor=Qt.TopRightCorner)
+
         scaleItem = view.scene().addScale(anchor=Qt.BottomRightCorner)
 
 

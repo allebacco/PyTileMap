@@ -9,6 +9,7 @@ from .maplegenditem import MapLegendItem
 from .mapescaleitem import MapScaleItem
 from .maptilesources import MapTileSource, MapTileSourceHere, MapTileSourceHereDemo, \
     MapTileSourceOSM, MapTileSourceHTTP
+from .mapnavitem import MapNavItem
 
 
 __all__ = [
@@ -26,6 +27,8 @@ __all__ = [
     'MapTileSourceHereDemo',
     'MapTileSourceOSM',
     'MapTileSourceHTTP',
+    "MapNavItem",
+    "ImageButton"
 ]
 
 __version__ = '1.0.0'

@@ -19,6 +19,9 @@ setup(
     description='Widget for tile maps in PyQt',
     long_description=long_description,
 
+    # Required for image files
+    include_package_data=True,
+
     # The project's main homepage.
     url='https://github.com/allebacco/PyTileMap',
 
