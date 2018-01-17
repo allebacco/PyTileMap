@@ -269,7 +269,7 @@ class MapGraphicsScene(QGraphicsScene):
         rect = QRectF(self.sceneRect().topLeft(), QSizeF(width, height))
         self.setSceneRect(rect)
 
-    def setCenter(self, lon, lat):
+    def setCenter(self, lon, lat, zoom=None):
         """Move the center of the visible area to new coordinates.
 
         Update the scene rect.
@@ -277,7 +277,11 @@ class MapGraphicsScene(QGraphicsScene):
         Args:
             lon(float): New longitude of the center.
             lat(float): New latitude of the center.
+            zoom(int [1:15]): Zoom Level
         """
+        if zoom != None and zoom < 15 and zoom > 0:
+            self._zoom = zoom
+        
         rect = QRectF(self.sceneRect())
         pos = self.posFromLonLat(lon, lat)
         rect.moveCenter(QPointF(pos[0], pos[1]))

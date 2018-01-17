@@ -77,7 +77,7 @@ class MapZoom(QMainWindow):
 
         self.setCentralWidget(view)
 
-        view.scene().setCenter(10.065990, 44.861041)
+        view.scene().setCenter(10.065990, 44.861041, zoom=7)
         view.setOptimizationFlag(QGraphicsView.DontSavePainterState, True)
         view.setRenderHint(QPainter.Antialiasing, True)
         view.setRenderHint(QPainter.SmoothPixmapTransform, True)
@@ -137,6 +137,7 @@ class MapZoom(QMainWindow):
         navItem = view.scene().addNavItem(anchor=Qt.TopRightCorner)
 
         scaleItem = view.scene().addScale(anchor=Qt.BottomRightCorner)
+
 
 
 def main():
