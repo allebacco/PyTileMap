@@ -111,6 +111,10 @@ class MapZoom(QMainWindow):
         pointItemPixmapOrigin = view.scene().addCircle(10.090598, 44.857893, 3.0)
         pointItemPixmapOrigin.setBrush(Qt.black)
 
+        pix2 = QPixmap(36,36)
+        pix2.fill(Qt.blue)
+        pixmapItem2 = view.scene().addGeoPixmap(10.090598, 44.857893, 10.092, 44.8585, pix2)
+
         pointItemWithChild = view.scene().addCircle(10.083103, 44.858014, 3.0)
         pointItemWithChild.setBrush(Qt.blue)
         pointItemWithChild.setPen(QPen(Qt.NoPen))

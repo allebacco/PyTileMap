@@ -2,13 +2,14 @@ from __future__ import print_function, absolute_import, division
 
 from numpy import floor
 
-from qtpy.QtCore import Qt, Slot, Signal, QRect, QRectF, QPointF, QSizeF, QPoint
+from qtpy.QtCore import Qt, Slot, Signal, QRect, QRectF, QPointF, QSizeF, QPoint, QSize
 from qtpy.QtGui import QPixmap
-from qtpy.QtWidgets import QGraphicsScene
+from qtpy.QtWidgets import QGraphicsScene, QRubberBand
+
 
 from .mapitems import MapGraphicsCircleItem, MapGraphicsLineItem, \
     MapGraphicsPolylineItem, MapGraphicsPixmapItem, MapGraphicsTextItem, \
-    MapGraphicsRectItem, MapGraphicsLinesGroupItem
+    MapGraphicsRectItem, MapGraphicsLinesGroupItem, MapGraphicsGeoPixmapItem
 from .maplegenditem import MapLegendItem
 from .mapescaleitem import MapScaleItem
 from .mapnavitem import MapNavItem
@@ -48,6 +49,7 @@ class MapGraphicsScene(QGraphicsScene):
 
         self.setSceneRect(0.0, 0.0, 400, 300)
         self.sceneRectChanged.connect(self.onSceneRectChanged)
+
 
     @Slot()
     def close(self):
@@ -406,6 +408,8 @@ class MapGraphicsScene(QGraphicsScene):
         self.addItem(item)
         return item
 
+
+
     def addPixmap(self, longitude, latitude, pixmap):
         """Add a new circle (point) to the graphics scene.
 
@@ -424,6 +428,12 @@ class MapGraphicsScene(QGraphicsScene):
         item = MapGraphicsPixmapItem(longitude, latitude, pixmap)
         self.addItem(item)
         return item
+
+    def addGeoPixmap(self, lon0, lat0, lon1, lat1, pixmap):
+        item = MapGraphicsGeoPixmapItem(lon0, lat0, lon1, lat1, pixmap)
+        self.addItem(item)
+        return item
+
 
     def addText(self, longitude, latitude, text):
         """Add a test item to the graphics scene.

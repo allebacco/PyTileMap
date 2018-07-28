@@ -2,7 +2,7 @@ from __future__ import print_function, absolute_import
 
 import numpy as np
 
-from qtpy.QtCore import Qt, QLineF, QPointF, QRectF
+from qtpy.QtCore import Qt, QLineF, QPointF, QRectF, QSize
 from qtpy.QtGui import QPainterPath
 from qtpy.QtWidgets import QGraphicsEllipseItem, QGraphicsLineItem, \
     QGraphicsPathItem, QGraphicsPixmapItem, QGraphicsItemGroup, \
@@ -137,6 +137,9 @@ class MapGraphicsCircleItem(QGraphicsEllipseItem, MapItem):
         if scene is not None:
             self.updatePosition(scene)
 
+    def mousePressEvent(self, evt):
+        print ("ellipse clicked!") 
+
 
 class MapGraphicsRectItem(QGraphicsRectItem, MapItem):
     """Circle item for the MapGraphicsScene
@@ -189,6 +192,8 @@ class MapGraphicsRectItem(QGraphicsRectItem, MapItem):
             self.updatePosition(self.scene())
 
 
+
+
 class MapGraphicsLineItem(QGraphicsLineItem, MapItem):
 
     QtParentClass = QGraphicsLineItem
@@ -219,6 +224,7 @@ class MapGraphicsLineItem(QGraphicsLineItem, MapItem):
         scene = self.scene()
         if scene is not None:
             self.updatePosition(self.scene())
+
 
 
 class MapGraphicsPolylineItem(QGraphicsPathItem, MapItem):
@@ -256,6 +262,67 @@ class MapGraphicsPolylineItem(QGraphicsPathItem, MapItem):
         scene = self.scene()
         if scene is not None:
             self.updatePosition(scene)
+
+
+    def mousePressEvent(self, evt):
+        print ("poly line clicked!") #QGraphicsSceneMouseEvent *event)
+
+class MapGraphicsGeoPixmapItem(QGraphicsPixmapItem, MapItem):
+
+    QtParentClass = QGraphicsPixmapItem
+
+    def __init__(self, lon0, lat0, lon1, lat1, pixmap, parent=None):
+        """Constructor.
+
+        Args:
+            longitude(float): Longitude of the origin of the pixmap.
+            latitude(float): Latitude of the center of the pixmap.
+            pixmap(QPixmap): Pixmap.
+            scene(MapGraphicsScene): Scene the item belongs to.
+            parent(QGraphicsItem): Parent item.
+        """
+        QGraphicsPixmapItem.__init__(self, parent=parent)
+        MapItem.__init__(self)
+
+        self._lon0 = lon0
+        self._lat0 = lat0
+        self._lon1 = lon1
+        self._lat1 = lat1
+        
+        self.orig_pixmap = pixmap
+        self.setPixmap(pixmap)
+        self.setShapeMode(1)
+
+
+    def updatePosition(self, scene):
+        pos0 = scene.posFromLonLat(self._lon0, self._lat0)
+        pos1 = scene.posFromLonLat(self._lon1, self._lat1)
+        #deltaPos = QPointF(pos1[0] - pos0[0], pos1[1] - pos0[1])
+        self.prepareGeometryChange()
+        xsize = int(pos1[0] - pos0[0])
+        ysize = int(pos0[1] - pos1[1])
+        newscale = QSize(xsize, ysize)
+        scaled = self.orig_pixmap.scaled(newscale)
+        self.setPixmap(scaled) 
+        self.setPos(pos0[0], pos0[1])
+        #self.setRect(pos0[0], pos0[1], pos1[0], pos1[1])
+
+
+
+    def setLonLat(self, lon0, lat0, lon1, lat1):
+        self._lon0 = lon0
+        self._lat0 = lat0
+        self._lon1 = lon1
+        self._lat1 = lat1
+        scene = self.scene()
+        if scene is not None:
+            self.updatePosition(self.scene())
+
+
+    def mousePressEvent(self, evt):
+        print ("geo pixmap clicked!") #QGraphicsSceneMouseEvent *event)
+
+# end MapGraphicsGeoPixmap
 
 
 class MapGraphicsPixmapItem(QGraphicsPixmapItem, MapItem):
