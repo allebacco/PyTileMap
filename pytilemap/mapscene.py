@@ -1,10 +1,11 @@
 from __future__ import print_function, absolute_import, division
 
 from numpy import floor
+import math
 
 from qtpy.QtCore import Qt, Slot, Signal, QRect, QRectF, QPointF, QSizeF, QPoint, QSize
-from qtpy.QtGui import QPixmap
-from qtpy.QtWidgets import QGraphicsScene, QRubberBand
+from qtpy.QtGui import QPixmap, QPen, QBrush, QColor, QPainter
+from qtpy.QtWidgets import QGraphicsScene, QGraphicsLineItem, QGraphicsRectItem, QGraphicsItem
 
 
 from .mapitems import MapGraphicsCircleItem, MapGraphicsLineItem, \
@@ -50,6 +51,10 @@ class MapGraphicsScene(QGraphicsScene):
         self.setSceneRect(0.0, 0.0, 400, 300)
         self.sceneRectChanged.connect(self.onSceneRectChanged)
 
+        # Rubberband Support for Drawing Areas
+        self.rect_start = None
+        self.rect_end   = None
+        self.rubberband = None
 
     @Slot()
     def close(self):
@@ -70,6 +75,58 @@ class MapGraphicsScene(QGraphicsScene):
 
         self.invalidate()
         self.update()
+
+    def mousePressEvent(self, evt):
+        if evt.button() == 2: 
+            evt.accept()
+            pos = evt.scenePos()
+            lon,lat = self.lonLatFromPos(pos.x(), pos.y())
+            self.rect_start = [lon,lat]
+
+            if self.rubberband == None:
+                self.rect_start = pos
+            # end mousePressEvent
+        else:
+            evt.ignore()
+            QGraphicsScene.mousePressEvent(self, evt)
+    # end mousePressEvent
+
+    def mouseReleaseEvent(self, evt):
+        if evt.button() == 2:
+            evt.accept()
+            pos = evt.scenePos()
+            lon,lat = self.lonLatFromPos(pos.x(), pos.y())
+            self.removeItem(self.rubberband)
+            self.rect_start = None
+            self.rect_end   = None
+            self.rubberband = None
+        else:
+            evt.ignore()
+            QGraphicsScene.mouseReleaseEvent(self, evt)
+    # end mouseReleaseEvent
+
+    def mouseMoveEvent(self, evt):
+        if self.rect_start: 
+            pos = evt.scenePos()
+            lon,lat = self.lonLatFromPos(pos.x(), pos.y())
+            self.rect_end = pos
+            if not self.rubberband:
+                self.rubberband = QGraphicsRectItem(
+                                      min(self.rect_start.x(), self.rect_end.x()), 
+                                      min(self.rect_start.y(), self.rect_end.y()),
+                                      abs(self.rect_end.x()-self.rect_start.x()), 
+                                      abs(self.rect_end.y()-self.rect_start.y()))
+                clr = QColor(240,240,240,100)
+                self.rubberband.setBrush(clr)
+                self.rubberband.setPen(QPen(QBrush(Qt.blue), 1.0))
+                self.addItem(self.rubberband)
+            else:
+                self.rubberband.setRect(
+                                      min(self.rect_start.x(), self.rect_end.x()), 
+                                      min(self.rect_start.y(), self.rect_end.y()),
+                                      abs(self.rect_end.x()-self.rect_start.x()), 
+                                      abs(self.rect_end.y()-self.rect_start.y()))
+    # end mouseMoveEvent
 
     @Slot(QRectF)
     def onSceneRectChanged(self, rect):
