@@ -8,7 +8,7 @@ from qtpy.QtNetwork import QNetworkRequest, QNetworkDiskCache, QNetworkAccessMan
 from .maptilesource import MapTileSource
 from ..qtsupport import getQVariantValue, getCacheFolder
 
-DEFAULT_CACHE_SIZE = 1024 * 1024 * 100
+DEFAULT_CACHE_SIZE = 1024 * 1024 * 1000
 
 
 class MapTileHTTPLoader(QObject):
@@ -17,6 +17,7 @@ class MapTileHTTPLoader(QObject):
 
     def __init__(self, cacheSize=DEFAULT_CACHE_SIZE, userAgent='(PyQt) TileMap 1.0', parent=None):
         QObject.__init__(self, parent=parent)
+        print ("http loader: cache size = {0}".format(cacheSize))
         self._manager = None
         self._cache = None
         self._cacheSize = cacheSize

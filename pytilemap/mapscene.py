@@ -2,6 +2,7 @@ from __future__ import print_function, absolute_import, division
 
 from numpy import floor
 import math
+import os
 
 from qtpy.QtCore import Qt, Slot, Signal, QRect, QRectF, QPointF, QSizeF, QPoint, QSize
 from qtpy.QtGui import QPixmap, QPen, QBrush, QColor, QPainter
@@ -55,6 +56,7 @@ class MapGraphicsScene(QGraphicsScene):
         self.rect_start = None
         self.rect_end   = None
         self.rubberband = None
+        self.AOI        = None
 
     @Slot()
     def close(self):
@@ -77,38 +79,51 @@ class MapGraphicsScene(QGraphicsScene):
         self.update()
 
     def mousePressEvent(self, evt):
+        '''Catch right-click events for rectangle drawing'''
         if evt.button() == 2: 
             evt.accept()
             pos = evt.scenePos()
-            lon,lat = self.lonLatFromPos(pos.x(), pos.y())
-            self.rect_start = [lon,lat]
+            #lon,lat = self.lonLatFromPos(pos.x(), pos.y())
+            #self.rect_start = [lon,lat]
+            self.rect_start = pos
 
-            if self.rubberband == None:
-                self.rect_start = pos
-            # end mousePressEvent
+            if self.rubberband != None:
+                self.removeItem(self.rubberband)
+                self.rubberband = None
+
+            if self.AOI != None:
+                self.removeItem(self.AOI)
+                self.AOI = None
         else:
             evt.ignore()
             QGraphicsScene.mousePressEvent(self, evt)
-    # end mousePressEvent
 
     def mouseReleaseEvent(self, evt):
+        '''Catch right-click events for rectangle drawing'''
         if evt.button() == 2:
             evt.accept()
             pos = evt.scenePos()
-            lon,lat = self.lonLatFromPos(pos.x(), pos.y())
+            lon0, lat0 = self.lonLatFromPos(self.rect_start.x(), self.rect_start.y())
+            lon1,lat1 = self.lonLatFromPos(pos.x(), pos.y())
             self.removeItem(self.rubberband)
+
             self.rect_start = None
             self.rect_end   = None
-            self.rubberband = None
+            
+            print ("creating AOI")
+            clr = QColor(100,240,240,100)
+            pix2 = QPixmap(100,100)
+            pix2.fill(clr)
+            self.AOI  = self.addGeoPixmap(lon0, lat0, lon1, lat1, pix2)
         else:
             evt.ignore()
             QGraphicsScene.mouseReleaseEvent(self, evt)
-    # end mouseReleaseEvent
 
     def mouseMoveEvent(self, evt):
+        '''Catch right-click events for rectangle drawing'''
         if self.rect_start: 
             pos = evt.scenePos()
-            lon,lat = self.lonLatFromPos(pos.x(), pos.y())
+            #lon,lat = self.lonLatFromPos(pos.x(), pos.y())
             self.rect_end = pos
             if not self.rubberband:
                 self.rubberband = QGraphicsRectItem(
@@ -126,7 +141,6 @@ class MapGraphicsScene(QGraphicsScene):
                                       min(self.rect_start.y(), self.rect_end.y()),
                                       abs(self.rect_end.x()-self.rect_start.x()), 
                                       abs(self.rect_end.y()-self.rect_start.y()))
-    # end mouseMoveEvent
 
     @Slot(QRectF)
     def onSceneRectChanged(self, rect):
@@ -465,7 +479,22 @@ class MapGraphicsScene(QGraphicsScene):
         self.addItem(item)
         return item
 
+    def addPin(self, lon, lat):
+        """Add a location pin to the graphics scene.
 
+        Args:
+            longitude(float): Longitude (decimal degrees WGS84) of the pin
+            latitude(float): Latitude of the Pin
+
+        Returns:
+            MapGraphicsPixmapItem added to the scene.
+        """
+        pinfile = os.path.dirname(__file__) + os.sep + 'red_pin_36_36.png'
+        pixmap = QPixmap(36,36)
+        pixmap.load(pinfile)
+        item = MapGraphicsPixmapItem(lon, lat, pixmap)
+        self.addItem(item)
+        return item
 
     def addPixmap(self, longitude, latitude, pixmap):
         """Add a new circle (point) to the graphics scene.
@@ -487,10 +516,20 @@ class MapGraphicsScene(QGraphicsScene):
         return item
 
     def addGeoPixmap(self, lon0, lat0, lon1, lat1, pixmap):
+        '''Add a geo-registered pixmap to the scene
+
+        Args:
+            lon0(float): Longitude (decimal degress WGS84) upper left
+            lat0(float): Lattitude (decimal degrees WGS84) upper left
+            lon1(float): Longitude lower right
+            lat1(float): Lattitudelower right
+        
+        Returns:
+            MapGraphicsGeoPixmapItem
+        '''
         item = MapGraphicsGeoPixmapItem(lon0, lat0, lon1, lat1, pixmap)
         self.addItem(item)
         return item
-
 
     def addText(self, longitude, latitude, text):
         """Add a test item to the graphics scene.
@@ -512,7 +551,6 @@ class MapGraphicsScene(QGraphicsScene):
         self.nav_item.zoom_in_button.clicked.connect(self.handleZoomIn)
         self.nav_item.zoom_out_button.clicked.connect(self.handleZoomOut)
         return self.nav_item
-
 
     def addLegend(self, pos=QPointF(10.0, 10.0)):
         legend = MapLegendItem(pos=pos)
@@ -538,6 +576,7 @@ class MapGraphicsScene(QGraphicsScene):
         scaleItem = MapScaleItem(**kwargs)
         self.addItem(scaleItem)
         return scaleItem
+
 
     def addLinesGroup(self, longitudes, latitudes):
         item = MapGraphicsLinesGroupItem(longitudes, latitudes)

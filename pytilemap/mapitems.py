@@ -293,21 +293,19 @@ class MapGraphicsGeoPixmapItem(QGraphicsPixmapItem, MapItem):
         self.setPixmap(pixmap)
         self.setShapeMode(1)
 
-
     def updatePosition(self, scene):
         pos0 = scene.posFromLonLat(self._lon0, self._lat0)
         pos1 = scene.posFromLonLat(self._lon1, self._lat1)
-        #deltaPos = QPointF(pos1[0] - pos0[0], pos1[1] - pos0[1])
         self.prepareGeometryChange()
-        xsize = int(pos1[0] - pos0[0])
-        ysize = int(pos0[1] - pos1[1])
+        xsize = abs(int(pos1[0] - pos0[0]))
+        ysize = abs(int(pos0[1] - pos1[1]))
         newscale = QSize(xsize, ysize)
         scaled = self.orig_pixmap.scaled(newscale)
         self.setPixmap(scaled) 
-        self.setPos(pos0[0], pos0[1])
-        #self.setRect(pos0[0], pos0[1], pos1[0], pos1[1])
-
-
+        #self.setPen(QPen(Qt.black))
+        ul_x = min(pos0[0], pos1[0])
+        ul_y = min(pos0[1], pos1[1])
+        self.setPos(ul_x, ul_y)
 
     def setLonLat(self, lon0, lat0, lon1, lat1):
         self._lon0 = lon0
@@ -318,9 +316,8 @@ class MapGraphicsGeoPixmapItem(QGraphicsPixmapItem, MapItem):
         if scene is not None:
             self.updatePosition(self.scene())
 
-
-    def mousePressEvent(self, evt):
-        print ("geo pixmap clicked!") #QGraphicsSceneMouseEvent *event)
+    #def mousePressEvent(self, evt):
+    #    print ("geo pixmap clicked!") #QGraphicsSceneMouseEvent *event)
 
 # end MapGraphicsGeoPixmap
 
