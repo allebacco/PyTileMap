@@ -490,7 +490,7 @@ class MapGraphicsScene(QGraphicsScene):
         Returns:
             MapGraphicsPixmapItem added to the scene.
         """
-        pinfile = os.path.dirname(__file__) + os.sep + 'red_pin_36_36.png'
+        pinfile = os.path.dirname(__file__) + os.sep + 'red_pin.png'
         pixmap = QPixmap()
         pixmap.load(pinfile)
         item = MapGraphicsPixmapItem(lon, lat, pixmap)
