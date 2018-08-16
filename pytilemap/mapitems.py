@@ -3,10 +3,10 @@ from __future__ import print_function, absolute_import
 import numpy as np
 
 from qtpy.QtCore import Qt, QLineF, QPointF, QRectF, QSize
-from qtpy.QtGui import QPainterPath
+from qtpy.QtGui import QPainterPath, QPen, QBrush, QColor
 from qtpy.QtWidgets import QGraphicsEllipseItem, QGraphicsLineItem, \
     QGraphicsPathItem, QGraphicsPixmapItem, QGraphicsItemGroup, \
-    QGraphicsSimpleTextItem, QGraphicsItem, QGraphicsRectItem
+    QGraphicsSimpleTextItem, QGraphicsItem, QGraphicsRectItem, QGraphicsTextItem
 
 from .functions import iterRange, makePen, izip
 from .qtsupport import getQVariantValue
@@ -27,6 +27,10 @@ class MapItem(object):
     def __init__(self):
         if not isinstance(self, QGraphicsItem):
             raise RuntimeError('MapItem must be an instance of QGraphicsItem')
+
+        self._label = "label"
+        self._label_item = None
+        self._label_html = False
 
     def itemChange(self, change, value):
         if change == self.ItemSceneChange:
@@ -79,6 +83,52 @@ class MapItem(object):
     def updatePosition(self, scene):
         raise NotImplementedError()
 
+    def setLabel(self, label, html=False):
+        self._label = label
+        self._label_html = html
+
+    def getLabelLocation(self):
+        ''' Get label location for this object
+
+        Args:
+            none
+
+        Returns:
+            (pos x, pos y) : position of label in pixels
+        '''
+        rect = self.getGeoRect()
+        br = rect.bottomRight()
+        pos = (br.x(), br.y())
+        return pos
+
+    def getGeoRect(self):
+        ''' Get bounding rectangle for this obj
+
+        Args:
+            none
+
+        Returns:
+            QRectF: (px x, px y, w, h)
+        '''
+        return self.boundingRect()
+
+    def showLabel(self):
+        ''' Show label for this object, if html is indicated, display formatted'''
+        if self._label_item:
+            return
+        self._label_item = MapGraphicsLabelItem(self, self._label)
+        if self._label_html:
+            self._label_item.setHtml(self._label)
+        self.scene().addItem(self._label_item)
+    
+    def hideLabel(self):
+        ''' Hide label for this object'''
+        if not self._label_item:
+            return
+        self.scene().removeItem(self._label_item)
+        self._label_item = None
+
+
 
 class MapGraphicsCircleItem(QGraphicsEllipseItem, MapItem):
     """Circle item for the MapGraphicsScene
@@ -130,6 +180,8 @@ class MapGraphicsCircleItem(QGraphicsEllipseItem, MapItem):
         scene = self.scene()
         if scene is not None:
             self.updatePosition(scene)
+        if self._label_item:
+            self._label_item.updatePosition(scene)
 
     def setRadius(self, radius):
         self._radius = radius
@@ -139,6 +191,13 @@ class MapGraphicsCircleItem(QGraphicsEllipseItem, MapItem):
 
     def mousePressEvent(self, evt):
         print ("ellipse clicked!") 
+        self.setLonLat(self._lon+0.0001, self._lat+0.0001)
+    
+    def hideLabel(self):
+        if not self._label_item:
+            return
+        self.scene().removeItem(self._label_item)
+        self._label_item = None
 
 
 class MapGraphicsRectItem(QGraphicsRectItem, MapItem):
@@ -302,10 +361,25 @@ class MapGraphicsGeoPixmapItem(QGraphicsPixmapItem, MapItem):
         newscale = QSize(xsize, ysize)
         scaled = self.orig_pixmap.scaled(newscale)
         self.setPixmap(scaled) 
-        #self.setPen(QPen(Qt.black))
         ul_x = min(pos0[0], pos1[0])
         ul_y = min(pos0[1], pos1[1])
         self.setPos(ul_x, ul_y)
+
+    def getGeoRect(self):
+        ''' get geo referenced rectangle for this object
+
+        Returns:
+            QRectF (upper left x, upper left y, width, height)
+        '''
+        pos0 = self.scene().posFromLonLat(self._lon0, self._lat0)
+        pos1 = self.scene().posFromLonLat(self._lon1, self._lat1)
+        xsize = abs(int(pos1[0] - pos0[0]))
+        ysize = abs(int(pos0[1] - pos1[1]))
+        ul_x = min(pos0[0], pos1[0])
+        ul_y = min(pos0[1], pos1[1])
+        rect = QRectF(ul_x, ul_y, xsize, ysize)
+        return rect
+
 
     def setLonLat(self, lon0, lat0, lon1, lat1):
         self._lon0 = lon0
@@ -316,10 +390,9 @@ class MapGraphicsGeoPixmapItem(QGraphicsPixmapItem, MapItem):
         if scene is not None:
             self.updatePosition(self.scene())
 
-    #def mousePressEvent(self, evt):
-    #    print ("geo pixmap clicked!") #QGraphicsSceneMouseEvent *event)
-
 # end MapGraphicsGeoPixmap
+
+
 
 
 class MapGraphicsPixmapItem(QGraphicsPixmapItem, MapItem):
@@ -345,6 +418,20 @@ class MapGraphicsPixmapItem(QGraphicsPixmapItem, MapItem):
         self._lat = latitude
         self.setPixmap(pixmap)
 
+    def getGeoRect(self):
+        ''' get geo referenced rectangle for this object
+
+        Returns:
+            QRectF (upper left x, upper left y, width, height)
+        '''
+        rect = self.boundingRect() 
+        pos = self.scene().posFromLonLat(self._lon, self._lat)
+        w = rect.width()
+        h = rect.height()
+        rect2 = QRectF(pos[0], pos[1], w, h )
+        return rect2
+
+
     def updatePosition(self, scene):
         """Update the origin position of the item.
 
@@ -353,9 +440,13 @@ class MapGraphicsPixmapItem(QGraphicsPixmapItem, MapItem):
         Args:
             scene(MapGraphicsScene): Scene the item belongs to.
         """
+        print ("here")
         pos = scene.posFromLonLat(self._lon, self._lat)
         self.prepareGeometryChange()
         self.setPos(pos[0], pos[1])
+        if self._label_item:
+            self._label_item.updatePosition(scene)
+            print ("updated label item")
 
     def setLonLat(self, longitude, latitude):
         """Update the origin coordinates of the item.
@@ -372,8 +463,13 @@ class MapGraphicsPixmapItem(QGraphicsPixmapItem, MapItem):
         if scene is not None:
             self.updatePosition(scene)
 
+    def mousePressEvent(self, evt):
+        print ("image clicked!") #QGraphicsSceneMouseEvent *event)
+        #------- pop up a text item here
+        # First, a rectangle
 
-class MapGraphicsTextItem(QGraphicsSimpleTextItem, MapItem):
+
+class MapGraphicsTextItem(QGraphicsTextItem, MapItem):
     """Text item for the MapGraphicsScene
     """
 
@@ -384,6 +480,9 @@ class MapGraphicsTextItem(QGraphicsSimpleTextItem, MapItem):
         MapItem.__init__(self)
         self._min_zoom = min_zoom_visibility
         self._lon, self._lat = longitude, latitude
+        self._border = QGraphicsRectItem(parent=self)
+        self._border.setPen(QPen(Qt.NoPen))
+        self._border.setBrush(QBrush(QColor(190, 190, 190, 160)))
 
     def resetMinZoomVisibility(self):
         """Delete level of zoom under which the text disappears. """
@@ -397,7 +496,39 @@ class MapGraphicsTextItem(QGraphicsSimpleTextItem, MapItem):
         """Update the origin position of the item."""
 
         pos = scene.posFromLonLat(self._lon, self._lat)
-        self.setPos(pos)
+        self.setPos(pos[0], pos[1])
+        if self._min_zoom is not None:
+            self.setVisible(scene._zoom >= self._min_zoom)
+        #rect = super(MapGraphicsTextItem, self).boundingRect()
+        #self._border.setRect()
+
+class MapGraphicsLabelItem(QGraphicsTextItem, MapItem):
+    """ Label for an item - updates its position with the item
+    """
+
+    QtParentClass = QGraphicsSimpleTextItem
+
+    def __init__(self, other_item, text, parent=None, min_zoom_visibility=None):
+        QGraphicsSimpleTextItem.__init__(self, text, parent=parent)
+        MapItem.__init__(self)
+        self.other_item = other_item
+        self._min_zoom = min_zoom_visibility
+        self._border = QGraphicsRectItem(parent=self)
+        self._border.setPen(QPen(Qt.NoPen))
+        self._border.setBrush(QBrush(QColor(190, 190, 190, 160)))
+
+    def resetMinZoomVisibility(self):
+        """Delete level of zoom under which the text disappears. """
+        self._min_zoom = None
+
+    def setMinZoomVisibility(self, zoom_level):
+        """Update level of zoom under which the text disappears. """
+        self._min_zoom = zoom_level
+
+    def updatePosition(self, scene):
+        """Update the origin position of the item."""
+        pos = self.other_item.getLabelLocation()
+        self.setPos(pos[0], pos[1])
         if self._min_zoom is not None:
             self.setVisible(scene._zoom >= self._min_zoom)
 
@@ -471,3 +602,4 @@ class MapGraphicsLinesGroupItem(QGraphicsItem, MapItem):
 
     def __getitem__(self, index):
         return self._lines[index]
+

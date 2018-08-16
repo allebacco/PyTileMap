@@ -11,7 +11,8 @@ from qtpy.QtWidgets import QGraphicsScene, QGraphicsLineItem, QGraphicsRectItem,
 
 from .mapitems import MapGraphicsCircleItem, MapGraphicsLineItem, \
     MapGraphicsPolylineItem, MapGraphicsPixmapItem, MapGraphicsTextItem, \
-    MapGraphicsRectItem, MapGraphicsLinesGroupItem, MapGraphicsGeoPixmapItem
+    MapGraphicsRectItem, MapGraphicsLinesGroupItem, MapGraphicsGeoPixmapItem, \
+    MapGraphicsLabelItem
 from .maplegenditem import MapLegendItem
 from .mapescaleitem import MapScaleItem
 from .mapnavitem import MapNavItem
@@ -490,7 +491,7 @@ class MapGraphicsScene(QGraphicsScene):
             MapGraphicsPixmapItem added to the scene.
         """
         pinfile = os.path.dirname(__file__) + os.sep + 'red_pin_36_36.png'
-        pixmap = QPixmap(36,36)
+        pixmap = QPixmap()
         pixmap.load(pinfile)
         item = MapGraphicsPixmapItem(lon, lat, pixmap)
         self.addItem(item)

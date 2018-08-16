@@ -77,7 +77,7 @@ class MapZoom(QMainWindow):
 
         self.setCentralWidget(view)
 
-        view.scene().setCenter(10.065990, 44.861041, zoom=7)
+        view.scene().setCenter(10.065990, 44.861041, zoom=13)
         view.setOptimizationFlag(QGraphicsView.DontSavePainterState, True)
         view.setRenderHint(QPainter.Antialiasing, True)
         view.setRenderHint(QPainter.SmoothPixmapTransform, True)
@@ -111,17 +111,25 @@ class MapZoom(QMainWindow):
         pointItemPixmapOrigin = view.scene().addCircle(10.090598, 44.857893, 3.0)
         pointItemPixmapOrigin.setBrush(Qt.black)
 
-        pix2 = QPixmap(36,36)
-        pix2.fill(Qt.blue)
-        pixmapItem2 = view.scene().addGeoPixmap(10.090598, 44.857893, 10.092, 44.8585, pix2)
+        # Pixmap with both corners geo-referenced
+        geo_pixmap = QPixmap(36,36)
+        geo_pixmap.fill(Qt.blue)
+        geo_pixmap_item= view.scene().addGeoPixmap(10.090598, 44.8709, 10.092, 44.873, geo_pixmap)
+        geo_pixmap_item.setLabel("GeoPixmapItem")
+        geo_pixmap_item.showLabel()
 
-        pointItemWithChild = view.scene().addCircle(10.083103, 44.858014, 3.0)
-        pointItemWithChild.setBrush(Qt.blue)
-        pointItemWithChild.setPen(QPen(Qt.NoPen))
+        # Blue Point with an HTML label
+        blue_point = view.scene().addCircle(10.083103, 44.868014, 3.0)
+        blue_point.setBrush(Qt.blue)
+        blue_point.setPen(QPen(Qt.NoPen))
+        blue_point.setLabel("<div style='background-color: #ffff00;'>" + "Label for Blue Point" + "</div>", html=True)
+        blue_point.showLabel()
 
-        textItem = QGraphicsSimpleTextItem('Annotation\nfor blue point', parent=pointItemWithChild)
-        textItem.setBrush(QBrush(QColor(Qt.blue)))
-        textItem.setPos(-5, 3)
+        # Location Pin
+        pin_item = view.scene().addPin(10.06, 44.84)
+        pin_item.setLabel("<div style='background-color: #00ff00;'><I>Pin Item</I></div>",html=True)
+        pin_item.showLabel()
+
 
         lats_2 = list()
         lons_2 = list()
@@ -142,6 +150,7 @@ class MapZoom(QMainWindow):
 
         scaleItem = view.scene().addScale(anchor=Qt.BottomRightCorner)
 
+        
 
 
 def main():
