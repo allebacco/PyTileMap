@@ -575,7 +575,7 @@ class MapGraphicsLinesGroupItem(QGraphicsItem, MapItem):
 
         x, y = scene.posFromLonLat(self._longitudes, self._latitudes)
         lines = self._lines
-        for i in iterRange(0, len(lines)-1):
+        for i in iterRange(0, len(lines)):
             lines[i].setLine(x[i], y[i], x[i+1], y[i+1])
 
     def setLonLat(self, longitudes, latitudes):
