@@ -25,6 +25,7 @@ class MapGraphicsScene(QGraphicsScene):
     """
 
     sigZoomChanged = Signal(int)
+    sigSelectionDrawn = Signal(float, float, float, float)
 
     def __init__(self, tileSource, parent=None):
         """Constructor.
@@ -57,7 +58,7 @@ class MapGraphicsScene(QGraphicsScene):
         self.rect_start = None
         self.rect_end   = None
         self.rubberband = None
-        self.AOI        = None
+        self.rubberband_enabled = False
 
     @Slot()
     def close(self):
@@ -81,27 +82,22 @@ class MapGraphicsScene(QGraphicsScene):
 
     def mousePressEvent(self, evt):
         '''Catch right-click events for rectangle drawing'''
-        if evt.button() == 2: 
+        if self.rubberband_enabled and evt.button() == 2: 
             evt.accept()
             pos = evt.scenePos()
-            #lon,lat = self.lonLatFromPos(pos.x(), pos.y())
-            #self.rect_start = [lon,lat]
             self.rect_start = pos
 
             if self.rubberband != None:
                 self.removeItem(self.rubberband)
                 self.rubberband = None
 
-            if self.AOI != None:
-                self.removeItem(self.AOI)
-                self.AOI = None
         else:
             evt.ignore()
             QGraphicsScene.mousePressEvent(self, evt)
 
     def mouseReleaseEvent(self, evt):
         '''Catch right-click events for rectangle drawing'''
-        if evt.button() == 2:
+        if self.rubberband_enabled and evt.button() == 2:
             evt.accept()
             pos = evt.scenePos()
             lon0, lat0 = self.lonLatFromPos(self.rect_start.x(), self.rect_start.y())
@@ -110,19 +106,17 @@ class MapGraphicsScene(QGraphicsScene):
 
             self.rect_start = None
             self.rect_end   = None
+            self.rubberband = None
             
-            print ("creating AOI")
-            clr = QColor(100,240,240,100)
-            pix2 = QPixmap(100,100)
-            pix2.fill(clr)
-            self.AOI  = self.addGeoPixmap(lon0, lat0, lon1, lat1, pix2)
+            self.sigSelectionDrawn.emit(lon0, lat0, lon1, lat1)
+            
         else:
             evt.ignore()
             QGraphicsScene.mouseReleaseEvent(self, evt)
 
     def mouseMoveEvent(self, evt):
         '''Catch right-click events for rectangle drawing'''
-        if self.rect_start: 
+        if self.rubberband_enabled and self.rect_start: 
             pos = evt.scenePos()
             #lon,lat = self.lonLatFromPos(pos.x(), pos.y())
             self.rect_end = pos
