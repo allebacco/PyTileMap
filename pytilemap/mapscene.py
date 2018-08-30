@@ -26,6 +26,7 @@ class MapGraphicsScene(QGraphicsScene):
 
     sigZoomChanged = Signal(int)
     sigSelectionDrawn = Signal(float, float, float, float)
+    customSceneRectChanged = Signal(float,float,float,float)
 
     def __init__(self, tileSource, parent=None):
         """Constructor.
@@ -174,6 +175,10 @@ class MapGraphicsScene(QGraphicsScene):
 
         self.invalidate()
         self.update()
+        lon0, lat0 = self.lonLatFromPos(rect.x(), rect.y())
+        lon1, lat1 = self.lonLatFromPos(rect.x() + rect.width(), rect.y() + rect.height())
+
+        self.customSceneRectChanged.emit(lon0, lat0, lon1, lat1)
 
     def drawBackground(self, painter, rect):
         """Draw the background tiles.
@@ -301,8 +306,8 @@ class MapGraphicsScene(QGraphicsScene):
         zoom = self._zoom
 
         # Request load of new tiles
-        for x in iterRange(numXtiles):
-            for y in iterRange(numYtiles):
+        for x in iterRange(numXtiles+1):
+            for y in iterRange(numYtiles+1):
                 tp = (left + x, top + y)
                 # Request tile only if missing
                 if tp not in tilePixmaps:

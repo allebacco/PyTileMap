@@ -11,6 +11,7 @@ class MapTileSourceHereDemo(MapTileSourceHTTP):
         MapTileSourceHTTP.__init__(self, tileSize=tileSize, minZoom=2, maxZoom=20, parent=parent)
         assert tileSize == 256 or tileSize == 512
         self._server = 1
+        self._cache_dir = 'api.here.com'
 
     def url(self, x, y, zoom):
         self._server += 1
@@ -34,6 +35,7 @@ class MapTileSourceHere(MapTileSourceHTTP):
                  minZoom=2, maxZoom=20, parent=None):
         MapTileSourceHTTP.__init__(self, tileSize=tileSize, minZoom=minZoom, maxZoom=maxZoom,
                                    mapHttpLoader=mapHttpLoader, parent=parent)
+        self._cache_dir = 'api.here.com'
         assert tileSize == 256 or tileSize == 512
         self._server = 1
 

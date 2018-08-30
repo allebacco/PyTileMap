@@ -24,6 +24,7 @@ class MapItem(object):
 
     QtParentClass = None
 
+
     def __init__(self):
         if not isinstance(self, QGraphicsItem):
             raise RuntimeError('MapItem must be an instance of QGraphicsItem')
@@ -151,9 +152,10 @@ class MapGraphicsCircleItem(QGraphicsEllipseItem, MapItem):
         """
         QGraphicsEllipseItem.__init__(self, parent=parent)
         MapItem.__init__(self)
+        self.setFlags(QGraphicsItem.ItemIsMovable)
 
-        self._lon = longitude
-        self._lat = latitude
+        self._lon    = longitude
+        self._lat    = latitude
         self._radius = radius
 
     def updatePosition(self, scene):
@@ -189,16 +191,11 @@ class MapGraphicsCircleItem(QGraphicsEllipseItem, MapItem):
         if scene is not None:
             self.updatePosition(scene)
 
-    def mousePressEvent(self, evt):
-        print ("ellipse clicked!") 
-        self.setLonLat(self._lon+0.0001, self._lat+0.0001)
-    
     def hideLabel(self):
         if not self._label_item:
             return
         self.scene().removeItem(self._label_item)
         self._label_item = None
-
 
 class MapGraphicsRectItem(QGraphicsRectItem, MapItem):
     """Circle item for the MapGraphicsScene
@@ -323,9 +320,6 @@ class MapGraphicsPolylineItem(QGraphicsPathItem, MapItem):
             self.updatePosition(scene)
 
 
-    def mousePressEvent(self, evt):
-        print ("poly line clicked!") #QGraphicsSceneMouseEvent *event)
-
 class MapGraphicsGeoPixmapItem(QGraphicsPixmapItem, MapItem):
 
     QtParentClass = QGraphicsPixmapItem
@@ -440,13 +434,11 @@ class MapGraphicsPixmapItem(QGraphicsPixmapItem, MapItem):
         Args:
             scene(MapGraphicsScene): Scene the item belongs to.
         """
-        print ("here")
         pos = scene.posFromLonLat(self._lon, self._lat)
         self.prepareGeometryChange()
         self.setPos(pos[0], pos[1])
         if self._label_item:
             self._label_item.updatePosition(scene)
-            print ("updated label item")
 
     def setLonLat(self, longitude, latitude):
         """Update the origin coordinates of the item.
@@ -462,12 +454,6 @@ class MapGraphicsPixmapItem(QGraphicsPixmapItem, MapItem):
         scene = self.scene()
         if scene is not None:
             self.updatePosition(scene)
-
-    def mousePressEvent(self, evt):
-        print ("image clicked!") #QGraphicsSceneMouseEvent *event)
-        #------- pop up a text item here
-        # First, a rectangle
-
 
 class MapGraphicsTextItem(QGraphicsTextItem, MapItem):
     """Text item for the MapGraphicsScene
