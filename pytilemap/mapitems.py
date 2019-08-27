@@ -3,7 +3,7 @@ from __future__ import print_function, absolute_import
 import numpy as np
 
 from qtpy.QtCore import Qt, QLineF, QPointF, QRectF, QSize
-from qtpy.QtGui import QPainterPath, QPen, QBrush, QColor
+from qtpy.QtGui import QPainterPath, QPen, QBrush, QColor, QTransform, QPolygonF
 from qtpy.QtWidgets import QGraphicsEllipseItem, QGraphicsLineItem, \
     QGraphicsPathItem, QGraphicsPixmapItem, QGraphicsItemGroup, \
     QGraphicsSimpleTextItem, QGraphicsItem, QGraphicsRectItem, QGraphicsTextItem, QMenu, QAction
@@ -494,11 +494,7 @@ class MapGraphicsGeoPixmapItem(QGraphicsPixmapItem, MapItem):
         self._lat1 = lat1
         self._xsize = 0
         self._ysize = 0
-        
-        self.orig_pixmap = pixmap
         self.setPixmap(pixmap)
-        #self.setPixmap(pixmap.scaled(2000,2000))
-        #self.setTransformationMode(Qt.FastTransformation)
         self.setShapeMode(1)
         self.x_mult = 1
         self.y_mult = 1
@@ -520,28 +516,17 @@ class MapGraphicsGeoPixmapItem(QGraphicsPixmapItem, MapItem):
         self.lr_x = max(pos0[0], pos1[0])
         self.lr_y = max(pos0[1], pos1[1])
 
-        print ("screen rect: {0}:{1}, {2}:{3}".format(int(x), int(x+width), int(y), int(y+height)),   
-               "img rect: {0}:{1}, {2}:{3}".format(int(self.ul_x), int(self.lr_x), int(self.ul_y), int(self.lr_y)))
-
         #if xsize != self._xsize or ysize != self._ysize:
         self._xsize = xsize
         self._ysize = ysize
-        self.x_mult = xsize / self.orig_pixmap.width()
-        self.y_mult = ysize / self.orig_pixmap.width()
-        if 1:
-            newscale = QSize(xsize, ysize)
-            print ("scaled: ", xsize, ysize)
-            scaled = self.orig_pixmap.scaled(newscale)
-            self.setPixmap(scaled) 
-        self.ul_x = min(pos0[0], pos1[0])
-        self.ul_y = min(pos0[1], pos1[1])
+        self.x_mult = xsize / self.pixmap().width()
+        self.y_mult = ysize / self.pixmap().width()
+
         self.setPos(self.ul_x, self.ul_y)
+        #self.setPixmap(self.orig_pixmap)
+        t = QTransform().scale(self.x_mult, self.y_mult)
+        self.setTransform(t)
 
-
-    # Scaled approach - does weird smoothing
-    #def paint(self, painter, option, widget=None):
-    #    print (self.x_mult, self.y_mult, self.orig_pixmap.width(), self.orig_pixmap.height())
-    #    painter.drawPixmap(0,0, self.orig_pixmap.width() * self.x_mult, self.orig_pixmap.height() * self.y_mult, self.orig_pixmap) 
 
     def getGeoRect(self):
         ''' get geo referenced rectangle for this object
