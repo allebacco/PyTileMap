@@ -6,7 +6,10 @@ from qtpy.QtCore import Qt, QLineF, QPointF, QRectF, QSize
 from qtpy.QtGui import QPainterPath, QPen, QBrush, QColor
 from qtpy.QtWidgets import QGraphicsEllipseItem, QGraphicsLineItem, \
     QGraphicsPathItem, QGraphicsPixmapItem, QGraphicsItemGroup, \
-    QGraphicsSimpleTextItem, QGraphicsItem, QGraphicsRectItem, QGraphicsTextItem
+    QGraphicsSimpleTextItem, QGraphicsItem, QGraphicsRectItem, QGraphicsTextItem, QMenu, QAction
+
+#from qtpy.QtWidgets import QGraphicsSvgItem
+from qtpy.QtSvg import QGraphicsSvgItem, QSvgRenderer
 
 from .functions import iterRange, makePen, izip
 from .qtsupport import getQVariantValue
@@ -197,6 +200,53 @@ class MapGraphicsCircleItem(QGraphicsEllipseItem, MapItem):
         self.scene().removeItem(self._label_item)
         self._label_item = None
 
+class MapGraphicsRectShapeItem(QGraphicsRectItem, MapItem):
+    """Circle item for the MapGraphicsScene
+    """
+
+    QtParentClass = QGraphicsRectItem
+
+    def __init__(self, lon, lat, width, height, parent=None):
+        """Constructor.
+
+        Args:
+            lon0(float): Longitude of the center point
+            lat0(float): Latitude of the center point
+            width(int): width in pixels
+            height(int): height in pixels
+            parent(QGraphicsItem): Parent item, default None.
+
+        """
+        QGraphicsRectItem.__init__(self, parent=parent)
+        MapItem.__init__(self)
+
+        self._lon    = lon
+        self._lat    = lat
+        self._width  = width
+        self._height = height
+
+    def updatePosition(self, scene):
+        """Update the position of the circle.
+
+        Args:
+            scene(MapGraphicsScene): Scene to which the circle belongs.
+        """
+        pos = scene.posFromLonLat(self._lon, self._lat)
+
+        self.prepareGeometryChange()
+        # This object is centered on the lat lon point, so shift it by half width/height
+        rect = QRectF(pos[0]-self._height//2, pos[1]-self._width//2, self._width, self._height)
+        self.setRect(rect)
+        self.setPos(QPointF(0.0, 0.0))
+
+    def setLonLat(self, lon, lat):
+        self._lon = lon
+        self._lat = lat
+        scene = self.scene()
+        if scene is not None:
+            self.updatePosition(self.scene())
+
+
 class MapGraphicsRectItem(QGraphicsRectItem, MapItem):
     """Circle item for the MapGraphicsScene
     """
@@ -232,9 +282,11 @@ class MapGraphicsRectItem(QGraphicsRectItem, MapItem):
         """
         pos0 = scene.posFromLonLat(self._lon0, self._lat0)
         pos1 = scene.posFromLonLat(self._lon1, self._lat1)
+        width = abs(int(pos1[0] - pos0[0]))
+        height= abs(int(pos0[1] - pos1[1]))
 
         self.prepareGeometryChange()
-        rect = QRectF(pos0, pos1).normalized()
+        rect = QRectF(pos0[0], pos0[1], width, height)
         self.setRect(rect)
         self.setPos(QPointF(0.0, 0.0))
 
@@ -246,8 +298,6 @@ class MapGraphicsRectItem(QGraphicsRectItem, MapItem):
         scene = self.scene()
         if scene is not None:
             self.updatePosition(self.scene())
-
-
 
 
 class MapGraphicsLineItem(QGraphicsLineItem, MapItem):
@@ -319,6 +369,103 @@ class MapGraphicsPolylineItem(QGraphicsPathItem, MapItem):
         if scene is not None:
             self.updatePosition(scene)
 
+class MapGraphicsGeoSvgItem(QGraphicsSvgItem, MapItem):
+
+    QtParentClass = QGraphicsSvgItem
+
+    def __init__(self, lon0, lat0, lon1, lat1, svg_filename, parent=None):
+        """Constructor.
+
+        Args:
+            longitude(float): Longitude of the upper left corner
+            latitude(float): Latitude of the upper left corner
+            longitude(float): Longitude of the lower right corner
+            latitude(float): Latitude of the lower right corner
+            svg_filename: Svg file name
+            scene(MapGraphicsScene): Scene the item belongs to.
+            parent(QGraphicsItem): Parent item.
+
+        This will display an svg file with the corners geo-registered
+        """
+        QGraphicsSvgItem.__init__(self, svg_filename, parent=parent)
+        MapItem.__init__(self)
+
+        self._lon0 = lon0
+        self._lat0 = lat0
+        self._lon1 = lon1
+        self._lat1 = lat1
+        self._xsize = 0
+        self._ysize = 0
+        
+        self.x_mult = 1
+        self.y_mult = 1
+        self._renderer = QSvgRenderer(svg_filename);
+        self._border = QGraphicsRectItem(parent=self)
+        self._border.setPen(Qt.black)
+
+    def updatePosition(self, scene):
+        pos0 = scene.posFromLonLat(self._lon0, self._lat0)
+        pos1 = scene.posFromLonLat(self._lon1, self._lat1)
+        self.prepareGeometryChange()
+        xsize = abs(int(pos1[0] - pos0[0]))
+        ysize = abs(int(pos0[1] - pos1[1]))
+
+        rect   = scene.sceneRect()
+        x      = rect.x()
+        y      = rect.y()
+        width  = rect.width()
+        height = rect.height()
+        self.ul_x = min(pos0[0], pos1[0])
+        self.ul_y = min(pos0[1], pos1[1])
+        self.lr_x = max(pos0[0], pos1[0])
+        self.lr_y = max(pos0[1], pos1[1])
+        #self.scale(width, height)
+
+        #print ("screen rect: {0}:{1}, {2}:{3}".format(int(x), int(x+width), int(y), int(y+height)),   
+        #       "img rect: {0}:{1}, {2}:{3}".format(int(self.ul_x), int(self.lr_x), int(self.ul_y), int(self.lr_y)))
+
+        #if xsize != self._xsize or ysize != self._ysize:
+        self._xsize = xsize
+        self._ysize = ysize
+        self.ul_x = min(pos0[0], pos1[0])
+        self.ul_y = min(pos0[1], pos1[1])
+        self.setPos(self.ul_x, self.ul_y)
+
+    # Scaled approach - does weird smoothing
+    def paint(self, painter, option, widget=None):
+        #print (self.x_mult, self.y_mult, self.orig_pixmap.width(), self.orig_pixmap.height())
+        self._renderer.render(painter, QRectF(0,0, self._xsize, self._ysize))
+    
+    def boundingRect(self):
+        return QRectF(0, 0, self._xsize, self._ysize)
+
+    def getGeoRect(self):
+        ''' get geo referenced rectangle for this object
+
+        Returns:
+            QRectF (upper left x, upper left y, width, height)
+        '''
+        pos0 = self.scene().posFromLonLat(self._lon0, self._lat0)
+        pos1 = self.scene().posFromLonLat(self._lon1, self._lat1)
+        xsize = abs(int(pos1[0] - pos0[0]))
+        ysize = abs(int(pos0[1] - pos1[1]))
+        ul_x = min(pos0[0], pos1[0])
+        ul_y = min(pos0[1], pos1[1])
+        rect = QRectF(ul_x, ul_y, xsize, ysize)
+        return rect
+
+
+    def setLonLat(self, lon0, lat0, lon1, lat1):
+        self._lon0 = lon0
+        self._lat0 = lat0
+        self._lon1 = lon1
+        self._lat1 = lat1
+        scene = self.scene()
+        if scene is not None:
+            self.updatePosition(self.scene())
+
+# end MapGraphicsGeoSvg
+
 
 class MapGraphicsGeoPixmapItem(QGraphicsPixmapItem, MapItem):
 
@@ -328,11 +475,15 @@ class MapGraphicsGeoPixmapItem(QGraphicsPixmapItem, MapItem):
         """Constructor.
 
         Args:
-            longitude(float): Longitude of the origin of the pixmap.
-            latitude(float): Latitude of the center of the pixmap.
+            longitude(float): Longitude of the upper left corner
+            latitude(float): Latitude of the upper left corner
+            longitude(float): Longitude of the lower right corner
+            latitude(float): Latitude of the lower right corner
             pixmap(QPixmap): Pixmap.
             scene(MapGraphicsScene): Scene the item belongs to.
             parent(QGraphicsItem): Parent item.
+
+        Show a pixamp with geo-registered corners
         """
         QGraphicsPixmapItem.__init__(self, parent=parent)
         MapItem.__init__(self)
@@ -341,10 +492,16 @@ class MapGraphicsGeoPixmapItem(QGraphicsPixmapItem, MapItem):
         self._lat0 = lat0
         self._lon1 = lon1
         self._lat1 = lat1
+        self._xsize = 0
+        self._ysize = 0
         
         self.orig_pixmap = pixmap
         self.setPixmap(pixmap)
+        #self.setPixmap(pixmap.scaled(2000,2000))
+        #self.setTransformationMode(Qt.FastTransformation)
         self.setShapeMode(1)
+        self.x_mult = 1
+        self.y_mult = 1
 
     def updatePosition(self, scene):
         pos0 = scene.posFromLonLat(self._lon0, self._lat0)
@@ -352,12 +509,39 @@ class MapGraphicsGeoPixmapItem(QGraphicsPixmapItem, MapItem):
         self.prepareGeometryChange()
         xsize = abs(int(pos1[0] - pos0[0]))
         ysize = abs(int(pos0[1] - pos1[1]))
-        newscale = QSize(xsize, ysize)
-        scaled = self.orig_pixmap.scaled(newscale)
-        self.setPixmap(scaled) 
-        ul_x = min(pos0[0], pos1[0])
-        ul_y = min(pos0[1], pos1[1])
-        self.setPos(ul_x, ul_y)
+
+        rect   = scene.sceneRect()
+        x      = rect.x()
+        y      = rect.y()
+        width  = rect.width()
+        height = rect.height()
+        self.ul_x = min(pos0[0], pos1[0])
+        self.ul_y = min(pos0[1], pos1[1])
+        self.lr_x = max(pos0[0], pos1[0])
+        self.lr_y = max(pos0[1], pos1[1])
+
+        print ("screen rect: {0}:{1}, {2}:{3}".format(int(x), int(x+width), int(y), int(y+height)),   
+               "img rect: {0}:{1}, {2}:{3}".format(int(self.ul_x), int(self.lr_x), int(self.ul_y), int(self.lr_y)))
+
+        #if xsize != self._xsize or ysize != self._ysize:
+        self._xsize = xsize
+        self._ysize = ysize
+        self.x_mult = xsize / self.orig_pixmap.width()
+        self.y_mult = ysize / self.orig_pixmap.width()
+        if 1:
+            newscale = QSize(xsize, ysize)
+            print ("scaled: ", xsize, ysize)
+            scaled = self.orig_pixmap.scaled(newscale)
+            self.setPixmap(scaled) 
+        self.ul_x = min(pos0[0], pos1[0])
+        self.ul_y = min(pos0[1], pos1[1])
+        self.setPos(self.ul_x, self.ul_y)
+
+
+    # Scaled approach - does weird smoothing
+    #def paint(self, painter, option, widget=None):
+    #    print (self.x_mult, self.y_mult, self.orig_pixmap.width(), self.orig_pixmap.height())
+    #    painter.drawPixmap(0,0, self.orig_pixmap.width() * self.x_mult, self.orig_pixmap.height() * self.y_mult, self.orig_pixmap) 
 
     def getGeoRect(self):
         ''' get geo referenced rectangle for this object
@@ -387,8 +571,6 @@ class MapGraphicsGeoPixmapItem(QGraphicsPixmapItem, MapItem):
 # end MapGraphicsGeoPixmap
 
 
-
-
 class MapGraphicsPixmapItem(QGraphicsPixmapItem, MapItem):
     """Item for showing a pixmap in a MapGraphicsScene.
     """
@@ -399,7 +581,7 @@ class MapGraphicsPixmapItem(QGraphicsPixmapItem, MapItem):
         """Constructor.
 
         Args:
-            longitude(float): Longitude of the origin of the pixmap.
+            longitude(float): Longitude of the center of the pixmap
             latitude(float): Latitude of the center of the pixmap.
             pixmap(QPixmap): Pixmap.
             scene(MapGraphicsScene): Scene the item belongs to.
@@ -436,7 +618,10 @@ class MapGraphicsPixmapItem(QGraphicsPixmapItem, MapItem):
         """
         pos = scene.posFromLonLat(self._lon, self._lat)
         self.prepareGeometryChange()
-        self.setPos(pos[0], pos[1])
+        rect = self.boundingRect()
+        w = rect.width()
+        h = rect.height()
+        self.setPos(pos[0] - h//2, pos[1] -w//2)
         if self._label_item:
             self._label_item.updatePosition(scene)
 
