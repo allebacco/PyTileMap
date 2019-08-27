@@ -8,11 +8,12 @@ from qtpy.QtCore import Qt, Slot, Signal, QRect, QRectF, QPointF, QSizeF, QPoint
 from qtpy.QtGui import QPixmap, QPen, QBrush, QColor, QPainter
 from qtpy.QtWidgets import QGraphicsScene, QGraphicsLineItem, QGraphicsRectItem, QGraphicsItem
 
+from qtpy.QtSvg import QGraphicsSvgItem
 
 from .mapitems import MapGraphicsCircleItem, MapGraphicsLineItem, \
     MapGraphicsPolylineItem, MapGraphicsPixmapItem, MapGraphicsTextItem, \
     MapGraphicsRectItem, MapGraphicsLinesGroupItem, MapGraphicsGeoPixmapItem, \
-    MapGraphicsLabelItem
+    MapGraphicsLabelItem, MapGraphicsGeoSvgItem, MapGraphicsRectShapeItem
 from .maplegenditem import MapLegendItem
 from .mapescaleitem import MapScaleItem
 from .mapnavitem import MapNavItem
@@ -37,7 +38,7 @@ class MapGraphicsScene(QGraphicsScene):
         """
         QGraphicsScene.__init__(self, parent=parent)
 
-        self._zoom = 15
+        self._zoom = 8
 
         self._tileSource = tileSource
         self._tileSource.setParent(self)
@@ -418,6 +419,23 @@ class MapGraphicsScene(QGraphicsScene):
         tdim = float(self._tileSource.tileSize())
         return QPointF(x / tdim, y / tdim)
 
+    def addRectShape(self, longitude, latitude, width, height):
+        """Add a new rectangle with fixed width/height
+
+        Args:
+            longitude(float): Longitude of the top left.
+            latitude(float): Latitude of the top left
+            width (float): width in pixels
+            height(float): height in pixels
+
+        Returns:
+            MapGraphicsCircleItem added to the scene.
+        """
+
+        item = MapGraphicsRectShapeItem(longitude, latitude, width, height)
+        self.addItem(item)
+        return item
+
     def addCircle(self, longitude, latitude, radius):
         """Add a new circle to the graphics scene.
 
@@ -514,6 +532,23 @@ class MapGraphicsScene(QGraphicsScene):
         item = MapGraphicsPixmapItem(longitude, latitude, pixmap)
         self.addItem(item)
         return item
+
+    def addGeoSvg(self, lon0, lat0, lon1, lat1, svg):
+        '''Add a geo-registered pixmap to the scene
+
+        Args:
+            lon0(float): Longitude (decimal degress WGS84) upper left
+            lat0(float): Lattitude (decimal degrees WGS84) upper left
+            lon1(float): Longitude lower right
+            lat1(float): Lattitudelower right
+        
+        Returns:
+            MapGraphicsGeoPixmapItem
+        '''
+        item = MapGraphicsGeoSvgItem(lon0, lat0, lon1, lat1, svg)
+        self.addItem(item)
+        return item
+
 
     def addGeoPixmap(self, lon0, lat0, lon1, lat1, pixmap):
         '''Add a geo-registered pixmap to the scene
