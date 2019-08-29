@@ -26,4 +26,4 @@ examples/main_gs.py
 - MapGraphicsLabelItem - a label that is attached to another map item
 
 # Screenshot
-![alt text] (https://github.com/bthcode/PyTileMap/blob/devel/screenshot.png)
+![Screenshot](screenshot.png)
