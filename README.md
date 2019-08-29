@@ -10,7 +10,7 @@ Simple to use map widget that can be used in a PyQt GUI.
 
 examples/main_gs.py
 
-Provides the following types:
+# Map Widgets
 
 - MapGraphicsLineItem - a line between two lat/lon points
 - MapGraphicsPolyLineItem - lines between a series of lat/lon points
