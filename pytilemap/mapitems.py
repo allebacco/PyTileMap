@@ -16,6 +16,33 @@ from .qtsupport import getQVariantValue
 
 SolidLine = Qt.SolidLine
 
+"""
+def order_points(pts):
+    '''https://www.pyimagesearch.com/2014/08/25/4-point-opencv-getperspective-transform-example/'''
+    import numpy as np
+    # initialzie a list of coordinates that will be ordered
+    # such that the first entry in the list is the top-left,
+    # the second entry is the top-right, the third is the
+    # bottom-right, and the fourth is the bottom-left
+    rect = np.zeros((4, 2), dtype = "float32")
+
+    # the top-left point will have the smallest sum, whereas
+    # the bottom-right point will have the largest sum
+    s = pts.sum(axis = 1)
+    rect[0] = pts[np.argmin(s)]
+    rect[2] = pts[np.argmax(s)]
+
+    # now, compute the difference between the points, the
+    # top-right point will have the smallest difference,
+    # whereas the bottom-left will have the largest difference
+    diff = np.diff(pts, axis = 1)
+    rect[1] = pts[np.argmin(diff)]
+    rect[3] = pts[np.argmax(diff)]
+
+    # return the ordered coordinates
+    return rect
+"""
+
 
 class MapItem(object):
     """Base class for each item in the MapGraphicScene
@@ -466,6 +493,159 @@ class MapGraphicsGeoSvgItem(QGraphicsSvgItem, MapItem):
 
 # end MapGraphicsGeoSvg
 
+class MapGraphicsGeoPixmapItemCorners(QGraphicsPixmapItem, MapItem):
+    '''
+    A pixmap that has all 4 corners specified so it warps to the map
+    '''
+
+    QtParentClass = QGraphicsPixmapItem
+
+    def __init__(self, lon0, lat0, lon1, lat1,
+                 lon2, lat2, lon3, lat3, pixmap, parent=None):
+        """Constructor.
+
+        Args:
+            lon0(float): Longitude (decimal degrees) of the upper left corner of the image
+            lat0(float): Latitude of the upper left corner of the image
+            lon1(float): longitude of the next point clockwise
+            lat1(float): latitude of the next point clockwise
+            lon2(float): longitude of the next point clockwise
+            lat2(float): longitude of the next point clockwise
+            lon3(float): latitude of the next point clockwise
+            lat3(float): latitude of the next point clockwise
+            pixmap(QPixmap): Pixmap.
+            scene(MapGraphicsScene): Scene the item belongs to.
+            parent(QGraphicsItem): Parent item.
+
+        Show a pixamp with geo-registered corners
+        """
+        QGraphicsPixmapItem.__init__(self, parent=parent)
+        MapItem.__init__(self)
+
+        self._lon0 = lon0
+        self._lat0 = lat0
+        self._lon1 = lon1
+        self._lat1 = lat1
+        self._lon2 = lon2
+        self._lat2 = lat2
+        self._lon3 = lon3
+        self._lat3 = lat3
+        self._xsize = 0
+        self._ysize = 0
+        self.setPixmap(pixmap)
+        self.setShapeMode(1)
+        self.x_mult = 1
+        self.y_mult = 1
+
+    def updatePosition(self, scene):
+
+        # 1. Get pix coords for each lat/lon point
+        pos0 = scene.posFromLonLat(self._lon0, self._lat0)
+        pos1 = scene.posFromLonLat(self._lon1, self._lat1)
+        pos2 = scene.posFromLonLat(self._lon2, self._lat2)
+        pos3 = scene.posFromLonLat(self._lon3, self._lat3)
+
+
+        self.prepareGeometryChange()
+
+        # 2. Get height and width in pixels
+        import math
+        h = math.sqrt( (pos3[0] - pos0[0])**2 +
+                       (pos3[1] - pos0[1])**2 )
+        w = math.sqrt( (pos1[0] - pos0[0])**2 +
+                       (pos1[1] - pos0[1])**2 )
+
+        # get horizontal rotation in pixels
+        a = pos3[1] - pos0[1]
+
+        # solve for rotation angle
+        ang = math.acos( a/h ) * 180 / math.pi
+
+        # CHECK IN LLA
+        #h2 = math.sqrt( (self._lat3 - self._lat0)**2 +
+        #                (self._lon3 - self._lon0)**2 )
+        #a2 = self._lat0 - self._lat3
+        #ang2 = math.asin( a2/h2) * 180 / math.pi
+
+        xsize = abs(int(pos1[0] - pos0[0]))
+        ysize = abs(int(pos0[1] - pos1[1]))
+
+        rect   = scene.sceneRect()
+        x      = rect.x()
+        y      = rect.y()
+        width  = rect.width()
+        height = rect.height()
+        self.ul_x = min(pos0[0], pos1[0])
+        self.ul_y = min(pos0[1], pos1[1])
+        self.lr_x = max(pos0[0], pos1[0])
+        self.lr_y = max(pos0[1], pos1[1])
+
+        self._xsize = w
+        self._ysize = h
+        self.x_mult = self._xsize / self.pixmap().width()
+        self.y_mult = self._ysize / self.pixmap().height()
+
+        # Set the image to 0, 0, then use a transform to 
+        #   to translate, rotate and warp it to the map
+        self.setPos(0, 0)
+
+        # Method 1: tranfsorm and scale
+        if 0:
+            self.setTransformOriginPoint(self.ul_x, self.ul_y)
+            t = QTransform().rotate(ang)
+            t.scale(self.x_mult, self.y_mult)
+            self.setTransform(t)
+        else:
+            pts = self.boundingRect()
+            t = QTransform()
+            poly1 = QPolygonF()
+
+            poly1.append(QPointF( 0, 0 ))
+            poly1.append(QPointF( w, 0 ))
+            poly1.append(QPointF( w, h ))
+            poly1.append(QPointF( 0, h ))
+
+            poly2 = QPolygonF()
+            poly2.append(QPointF(pos0[0], pos0[1]))
+            poly2.append(QPointF(pos1[0], pos1[1]))
+            poly2.append(QPointF(pos2[0], pos2[1]))
+            poly2.append(QPointF(pos3[0], pos3[1]))
+            success = QTransform.quadToQuad(poly1, poly2, t)
+            if not success:
+                logging.error('Unable to register image')
+            t.scale(self.x_mult, self.y_mult)
+            self.setTransform(t)
+
+
+    def getGeoRect(self):
+        ''' get geo referenced rectangle for this object
+
+        Returns:
+            QRectF (upper left x, upper left y, width, height)
+        '''
+        pos0 = self.scene().posFromLonLat(self._lon0, self._lat0)
+        pos1 = self.scene().posFromLonLat(self._lon1, self._lat1)
+        xsize = abs(int(pos1[0] - pos0[0]))
+        ysize = abs(int(pos0[1] - pos1[1]))
+        ul_x = min(pos0[0], pos1[0])
+        ul_y = min(pos0[1], pos1[1])
+        rect = QRectF(ul_x, ul_y, xsize, ysize)
+        return rect
+
+
+    def setLonLat(self, lon0, lat0, lon1, lat1):
+        self._lon0 = lon0
+        self._lat0 = lat0
+        self._lon1 = lon1
+        self._lat1 = lat1
+        scene = self.scene()
+        if scene is not None:
+            self.updatePosition(self.scene())
+
+# end MapGraphicsGeoPixmap
+
+
+
 
 class MapGraphicsGeoPixmapItem(QGraphicsPixmapItem, MapItem):
 
@@ -520,10 +700,9 @@ class MapGraphicsGeoPixmapItem(QGraphicsPixmapItem, MapItem):
         self._xsize = xsize
         self._ysize = ysize
         self.x_mult = xsize / self.pixmap().width()
-        self.y_mult = ysize / self.pixmap().width()
+        self.y_mult = ysize / self.pixmap().height()
 
         self.setPos(self.ul_x, self.ul_y)
-        #self.setPixmap(self.orig_pixmap)
         t = QTransform().scale(self.x_mult, self.y_mult)
         self.setTransform(t)
 

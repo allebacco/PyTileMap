@@ -8,6 +8,7 @@ from qtpy.QtWidgets import QMainWindow, QGraphicsView, QGraphicsItem, \
 from pytilemap import MapGraphicsView, MapTileSourceHere, MapTileSourceOSM
 
 
+
 POINTS = [(44.837632, 10.201736),
           (44.837621, 10.201474),
           (44.837594, 10.201205),
@@ -129,6 +130,32 @@ class MapZoom(QMainWindow):
         pin_item = view.scene().addPin(10.06, 44.84)
         pin_item.setLabel("<div style='background-color: #00ff00;'><I>Pin Item</I></div>",html=True)
         pin_item.showLabel()
+
+        lon0r = 10.06
+        lat0r = 44.83
+        lon1r = 10.110000000000001
+        lat1r = 44.743397459621555
+        lon2r = 9.936794919243113
+        lat2r = 44.64339745962155
+        lon3r = 9.886794919243112
+        lat3r = 44.73
+
+        pin0 = view.scene().addPin(lon0r, lat0r)
+        pin1 = view.scene().addPin(lon1r, lat1r)
+        pin2 = view.scene().addPin(lon2r, lat2r)
+        pin3 = view.scene().addPin(lon3r, lat3r)
+
+        clr = QColor(0,255,0,100)
+        pix = QPixmap(100,100)
+        pix.fill(clr)
+
+
+        view.scene().addGeoPixmapCorners(lon0r, lat0r,
+                                        lon1r, lat1r,
+                                        lon2r, lat2r,
+                                        lon3r, lat3r,
+                                        pix)
+
 
 
         lats_2 = list()

@@ -13,7 +13,7 @@ from qtpy.QtSvg import QGraphicsSvgItem
 from .mapitems import MapGraphicsCircleItem, MapGraphicsLineItem, \
     MapGraphicsPolylineItem, MapGraphicsPixmapItem, MapGraphicsTextItem, \
     MapGraphicsRectItem, MapGraphicsLinesGroupItem, MapGraphicsGeoPixmapItem, \
-    MapGraphicsLabelItem, MapGraphicsGeoSvgItem, MapGraphicsRectShapeItem
+    MapGraphicsLabelItem, MapGraphicsGeoSvgItem, MapGraphicsRectShapeItem, MapGraphicsGeoPixmapItemCorners
 from .maplegenditem import MapLegendItem
 from .mapescaleitem import MapScaleItem
 from .mapnavitem import MapNavItem
@@ -565,6 +565,28 @@ class MapGraphicsScene(QGraphicsScene):
         item = MapGraphicsGeoPixmapItem(lon0, lat0, lon1, lat1, pixmap)
         self.addItem(item)
         return item
+
+    def addGeoPixmapCorners(self, lon0, lat0, lon1, lat1, lon2, lat2, lon3, lat3, pixmap):
+        '''Add a geo-registered pixmap to the scene using 4 lat-lon corners
+
+        Args:
+            lon0(float): Longitude (decimal degress WGS84) upper left of image
+            lat0(float): Lattitude (decimal degrees WGS84) upper left of image
+            lon1(float): Lat of next point clockwise
+            lat1(float): Lon of next point clockwise
+            lon2(float): Lat of next point clockwise
+            lat2(float): Lon of next point clockwise
+            lon3(float): Lat of next point clockwise
+            lat3(float): Lon of next point clockwise
+
+        Returns:
+            MapGraphicsGeoPixmapItem
+        '''
+        item = MapGraphicsGeoPixmapItemCorners(lon0, lat0, lon1, lat1,
+                                               lon2, lat2, lon3, lat3, pixmap)
+        self.addItem(item)
+        return item
+
 
     def addText(self, longitude, latitude, text):
         """Add a test item to the graphics scene.
