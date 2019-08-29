@@ -24,3 +24,6 @@ examples/main_gs.py
 - MapGraphicsGeoPixmapItem - draw a pixmap given upper left and lower right lat/lon (scales with zoom)
 - MapGraphicsGeoPixmapItemCorners - draw a pixmap given all four lat/lon corners (scales with zoom)
 - MapGraphicsLabelItem - a label that is attached to another map item
+
+# Screenshot
+[image] https://github.com/bthcode/PyTileMap/blob/devel/screenshot.png
