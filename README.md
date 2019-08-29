@@ -1,8 +1,26 @@
 # PyTileMap
 
-Tile map visualization for PyQt4.
+PyQt Map System forked from:
 
-This project allows the visualization of Open Street Map, HERE and other maps
-in a PyQt4 GUI.
+https://github.com/allebacco/PyTileMap
 
-The project has been inspired from of https://github.com/emka/python-lightmaps.
+Simple to use map widget that can be used in a PyQt GUI.
+
+# Example:
+
+examples/main_gs.py
+
+Provides the following types:
+
+- MapGraphicsLineItem - a line between two lat/lon points
+- MapGraphicsPolyLineItem - lines between a series of lat/lon points
+- MapGraphicsPixmapItem - place a pixmap at a given lat/lon (does not scale with map zoom)
+- MapGraphicsTextItem - place text at a given lat/lon
+- MapGraphicsLinesGroupItem - a group of lines
+- MapGraphicsCircleItem - draw a circle centered at a lat/lon
+- MapGraphicsRectItem - draw a rectangle given upper left and lower right lat/lon  (scales with zoom)
+- MapGraphicsRectShapeItem - draw a rectangle with a fixed with and height (does not scale with zoom)
+- MapGraphicsGeoSvgItem - draw an svg given upper left and lower right lat/lon (scales with zoom)
+- MapGraphicsGeoPixmapItem - draw a pixmap given upper left and lower right lat/lon (scales with zoom)
+- MapGraphicsGeoPixmapItemCorners - draw a pixmap given all four lat/lon corners (scales with zoom)
+- MapGraphicsLabelItem - a label that is attached to another map item
