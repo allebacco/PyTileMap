@@ -508,7 +508,7 @@ class MapGraphicsGeoPixmapItemCorners(QGraphicsPixmapItem, MapItem):
             lon0(float): Longitude (decimal degrees) of the upper left corner of the image
             lat0(float): Latitude of the upper left corner of the image
             lon1(float): longitude of the next point clockwise
-            lat1(float): latitude of the next point clockwise
+            lat0(float): latitude of the next point clockwise
             lon2(float): longitude of the next point clockwise
             lat2(float): longitude of the next point clockwise
             lon3(float): latitude of the next point clockwise
@@ -548,6 +548,7 @@ class MapGraphicsGeoPixmapItemCorners(QGraphicsPixmapItem, MapItem):
 
         self.prepareGeometryChange()
 
+        '''
         # 2. Get height and width in pixels
         import math
         h = math.sqrt( (pos3[0] - pos0[0])**2 +
@@ -584,21 +585,30 @@ class MapGraphicsGeoPixmapItemCorners(QGraphicsPixmapItem, MapItem):
         self._ysize = h
         self.x_mult = self._xsize / self.pixmap().width()
         self.y_mult = self._ysize / self.pixmap().height()
+        '''
 
         # Set the image to 0, 0, then use a transform to 
         #   to translate, rotate and warp it to the map
-        self.setPos(0, 0)
 
         # Method 1: tranfsorm and scale
         if 0:
-            self.setTransformOriginPoint(self.ul_x, self.ul_y)
+            self.setTransformOriginPoint(pos0[0] + (pos0[0] - pos1[0]) / 2, pos0[1] + (pos0[1] - pos2[1])/2)
+            self.setPos(self.ul_x, self.ul_y)
             t = QTransform().rotate(ang)
             t.scale(self.x_mult, self.y_mult)
             self.setTransform(t)
         else:
-            pts = self.boundingRect()
+            #print ('0: {},{}'.format(self._lon0, self._lat0))
+            #print ('1: {},{}'.format(self._lon1, self._lat1))
+            #print ('2: {},{}'.format(self._lon2, self._lat2))
+            #print ('3: {},{}'.format(self._lon3, self._lat3))
+            self.setPos(0, 0)
             t = QTransform()
             poly1 = QPolygonF()
+
+            w = self.pixmap().width()
+            h = self.pixmap().height()
+            print ('w={}, h={}'.format(w,h))
 
             poly1.append(QPointF( 0, 0 ))
             poly1.append(QPointF( w, 0 ))
@@ -613,7 +623,8 @@ class MapGraphicsGeoPixmapItemCorners(QGraphicsPixmapItem, MapItem):
             success = QTransform.quadToQuad(poly1, poly2, t)
             if not success:
                 logging.error('Unable to register image')
-            t.scale(self.x_mult, self.y_mult)
+            else:
+                print ("success!")
             self.setTransform(t)
 
 
