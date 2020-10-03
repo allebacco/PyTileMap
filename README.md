@@ -6,6 +6,9 @@ https://github.com/allebacco/PyTileMap
 
 Simple to use map widget that can be used in a PyQt GUI.
 
+# Install:
+python setup.py install
+
 # Example:
 
 examples/main_gs.py

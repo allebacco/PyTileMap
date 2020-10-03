@@ -544,88 +544,34 @@ class MapGraphicsGeoPixmapItemCorners(QGraphicsPixmapItem, MapItem):
         pos1 = scene.posFromLonLat(self._lon1, self._lat1)
         pos2 = scene.posFromLonLat(self._lon2, self._lat2)
         pos3 = scene.posFromLonLat(self._lon3, self._lat3)
-
-
         self.prepareGeometryChange()
-
-        '''
-        # 2. Get height and width in pixels
-        import math
-        h = math.sqrt( (pos3[0] - pos0[0])**2 +
-                       (pos3[1] - pos0[1])**2 )
-        w = math.sqrt( (pos1[0] - pos0[0])**2 +
-                       (pos1[1] - pos0[1])**2 )
-
-        # get horizontal rotation in pixels
-        a = pos3[1] - pos0[1]
-
-        # solve for rotation angle
-        ang = math.acos( a/h ) * 180 / math.pi
-
-        # CHECK IN LLA
-        #h2 = math.sqrt( (self._lat3 - self._lat0)**2 +
-        #                (self._lon3 - self._lon0)**2 )
-        #a2 = self._lat0 - self._lat3
-        #ang2 = math.asin( a2/h2) * 180 / math.pi
-
-        xsize = abs(int(pos1[0] - pos0[0]))
-        ysize = abs(int(pos0[1] - pos1[1]))
-
-        rect   = scene.sceneRect()
-        x      = rect.x()
-        y      = rect.y()
-        width  = rect.width()
-        height = rect.height()
-        self.ul_x = min(pos0[0], pos1[0])
-        self.ul_y = min(pos0[1], pos1[1])
-        self.lr_x = max(pos0[0], pos1[0])
-        self.lr_y = max(pos0[1], pos1[1])
-
-        self._xsize = w
-        self._ysize = h
-        self.x_mult = self._xsize / self.pixmap().width()
-        self.y_mult = self._ysize / self.pixmap().height()
-        '''
 
         # Set the image to 0, 0, then use a transform to 
         #   to translate, rotate and warp it to the map
 
-        # Method 1: tranfsorm and scale
-        if 0:
-            self.setTransformOriginPoint(pos0[0] + (pos0[0] - pos1[0]) / 2, pos0[1] + (pos0[1] - pos2[1])/2)
-            self.setPos(self.ul_x, self.ul_y)
-            t = QTransform().rotate(ang)
-            t.scale(self.x_mult, self.y_mult)
-            self.setTransform(t)
-        else:
-            #print ('0: {},{}'.format(self._lon0, self._lat0))
-            #print ('1: {},{}'.format(self._lon1, self._lat1))
-            #print ('2: {},{}'.format(self._lon2, self._lat2))
-            #print ('3: {},{}'.format(self._lon3, self._lat3))
-            self.setPos(0, 0)
-            t = QTransform()
-            poly1 = QPolygonF()
+        # tranfsorm and scale
+        self.setPos(0, 0)
+        t = QTransform()
+        poly1 = QPolygonF()
 
-            w = self.pixmap().width()
-            h = self.pixmap().height()
-            print ('w={}, h={}'.format(w,h))
+        w = self.pixmap().width()
+        h = self.pixmap().height()
 
-            poly1.append(QPointF( 0, 0 ))
-            poly1.append(QPointF( w, 0 ))
-            poly1.append(QPointF( w, h ))
-            poly1.append(QPointF( 0, h ))
+        poly1.append(QPointF( 0, 0 ))
+        poly1.append(QPointF( w, 0 ))
+        poly1.append(QPointF( w, h ))
+        poly1.append(QPointF( 0, h ))
 
-            poly2 = QPolygonF()
-            poly2.append(QPointF(pos0[0], pos0[1]))
-            poly2.append(QPointF(pos1[0], pos1[1]))
-            poly2.append(QPointF(pos2[0], pos2[1]))
-            poly2.append(QPointF(pos3[0], pos3[1]))
-            success = QTransform.quadToQuad(poly1, poly2, t)
-            if not success:
-                logging.error('Unable to register image')
-            else:
-                print ("success!")
-            self.setTransform(t)
+        poly2 = QPolygonF()
+        poly2.append(QPointF(pos0[0], pos0[1]))
+        poly2.append(QPointF(pos1[0], pos1[1]))
+        poly2.append(QPointF(pos2[0], pos2[1]))
+        poly2.append(QPointF(pos3[0], pos3[1]))
+        success = QTransform.quadToQuad(poly1, poly2, t)
+        if not success:
+            logging.error('Unable to register image')
+            
+        self.setTransform(t)
 
 
     def getGeoRect(self):
