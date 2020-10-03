@@ -131,6 +131,7 @@ class MapZoom(QMainWindow):
         pin_item.setLabel("<div style='background-color: #00ff00;'><I>Pin Item</I></div>",html=True)
         pin_item.showLabel()
 
+        # Pixmap with all four corners geo-referenced
         lon0r = 10.06
         lat0r = 44.83
         lon1r = 10.110000000000001
@@ -140,15 +141,9 @@ class MapZoom(QMainWindow):
         lon3r = 9.886794919243112
         lat3r = 44.73
 
-        pin0 = view.scene().addPin(lon0r, lat0r)
-        pin1 = view.scene().addPin(lon1r, lat1r)
-        pin2 = view.scene().addPin(lon2r, lat2r)
-        pin3 = view.scene().addPin(lon3r, lat3r)
-
         clr = QColor(0,255,0,100)
         pix = QPixmap(100,100)
         pix.fill(clr)
-
 
         view.scene().addGeoPixmapCorners(lon0r, lat0r,
                                         lon1r, lat1r,
