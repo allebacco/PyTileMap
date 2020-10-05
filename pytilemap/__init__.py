@@ -2,7 +2,7 @@ from __future__ import print_function, absolute_import
 
 from .mapscene import MapGraphicsScene
 from .mapview import MapGraphicsView
-from .mapitems import MapGraphicsCircleItem, MapGraphicsLineItem, \
+from .mapitems import MapItem, MapGraphicsCircleItem, MapGraphicsLineItem, \
     MapGraphicsPolylineItem, MapGraphicsPixmapItem, MapGraphicsTextItem, \
     MapGraphicsRectItem
 from .maplegenditem import MapLegendItem
@@ -28,7 +28,8 @@ __all__ = [
     'MapTileSourceOSM',
     'MapTileSourceHTTP',
     "MapNavItem",
-    "ImageButton"
+    "ImageButton",
+    "MapItem"
 ]
 
 __version__ = '1.0.0'
