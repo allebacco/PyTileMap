@@ -30,3 +30,7 @@ examples/main_gs.py
 
 # Screenshot
 ![Screenshot](screenshot.png)
+
+# Other Python Maps
+
+https://github.com/TomSchimansky/TkinterMapView
