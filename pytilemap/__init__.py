@@ -10,6 +10,7 @@ from .mapescaleitem import MapScaleItem
 from .maptilesources import MapTileSource, MapTileSourceHere, MapTileSourceHereDemo, \
     MapTileSourceOSM, MapTileSourceHTTP
 from .mapnavitem import MapNavItem
+from .imagebutton import ImageButton
 
 
 __all__ = [
