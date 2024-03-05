@@ -8,6 +8,7 @@ from qtpy.QtWidgets import QMainWindow, QGraphicsView, QGraphicsItem, \
 from pytilemap import MapGraphicsView, MapTileSourceHere, MapTileSourceOSM
 
 
+
 POINTS = [(44.837632, 10.201736),
           (44.837621, 10.201474),
           (44.837594, 10.201205),
@@ -77,7 +78,7 @@ class MapZoom(QMainWindow):
 
         self.setCentralWidget(view)
 
-        view.scene().setCenter(10.065990, 44.861041)
+        view.scene().setCenter(10.065990, 44.861041, zoom=13)
         view.setOptimizationFlag(QGraphicsView.DontSavePainterState, True)
         view.setRenderHint(QPainter.Antialiasing, True)
         view.setRenderHint(QPainter.SmoothPixmapTransform, True)
@@ -111,13 +112,46 @@ class MapZoom(QMainWindow):
         pointItemPixmapOrigin = view.scene().addCircle(10.090598, 44.857893, 3.0)
         pointItemPixmapOrigin.setBrush(Qt.black)
 
-        pointItemWithChild = view.scene().addCircle(10.083103, 44.858014, 3.0)
-        pointItemWithChild.setBrush(Qt.blue)
-        pointItemWithChild.setPen(QPen(Qt.NoPen))
+        # Pixmap with both corners geo-referenced
+        geo_pixmap = QPixmap(36,36)
+        geo_pixmap.fill(Qt.blue)
+        geo_pixmap_item= view.scene().addGeoPixmap(10.090598, 44.8709, 10.092, 44.873, geo_pixmap)
+        geo_pixmap_item.setLabel("GeoPixmapItem")
+        geo_pixmap_item.showLabel()
 
-        textItem = QGraphicsSimpleTextItem('Annotation\nfor blue point', parent=pointItemWithChild)
-        textItem.setBrush(QBrush(QColor(Qt.blue)))
-        textItem.setPos(-5, 3)
+        # Blue Point with an HTML label
+        blue_point = view.scene().addCircle(10.083103, 44.868014, 3.0)
+        blue_point.setBrush(Qt.blue)
+        blue_point.setPen(QPen(Qt.NoPen))
+        blue_point.setLabel("<div style='background-color: #ffff00;'>" + "Label for Blue Point" + "</div>", html=True)
+        blue_point.showLabel()
+
+        # Location Pin
+        pin_item = view.scene().addPin(10.06, 44.84)
+        pin_item.setLabel("<div style='background-color: #00ff00;'><I>Pin Item</I></div>",html=True)
+        pin_item.showLabel()
+
+        # Pixmap with all four corners geo-referenced
+        lon0r = 10.06
+        lat0r = 44.83
+        lon1r = 10.110000000000001
+        lat1r = 44.743397459621555
+        lon2r = 9.936794919243113
+        lat2r = 44.64339745962155
+        lon3r = 9.886794919243112
+        lat3r = 44.73
+
+        clr = QColor(0,255,0,100)
+        pix = QPixmap(100,100)
+        pix.fill(clr)
+
+        view.scene().addGeoPixmapCorners(lon0r, lat0r,
+                                        lon1r, lat1r,
+                                        lon2r, lat2r,
+                                        lon3r, lat3r,
+                                        pix)
+
+
 
         lats_2 = list()
         lons_2 = list()
@@ -134,7 +168,11 @@ class MapZoom(QMainWindow):
         legendItem.addRect('Sphere 4', '#00FFFF', border=None)
         legendItem.addPoint('Polygon 5', '#FF00FF', border=None)
 
+        navItem = view.scene().addNavItem(anchor=Qt.TopRightCorner)
+
         scaleItem = view.scene().addScale(anchor=Qt.BottomRightCorner)
+
+        
 
 
 def main():

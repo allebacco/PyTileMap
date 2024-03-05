@@ -12,7 +12,7 @@ class MapTileSource(QObject):
     _minZoom = None
     _maxZoom = None
 
-    def __init__(self, tileSize=256, minZoom=2, maxZoom=18, parent=None):
+    def __init__(self, tileSize=256, minZoom=2, maxZoom=17, parent=None):
         QObject.__init__(self, parent=parent)
         self._tileSize = tileSize
         self._minZoom = minZoom
